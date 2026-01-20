@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { useStore } from '../../store';
 import { cn } from '../../utils/cn';
+import logo from '../../assets/zhixia-logo.svg';
 import type { FileNode } from '../../types';
 import { 
   Folder, 
@@ -14,7 +15,8 @@ import {
   Edit2,
   Home,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  RotateCw
 } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 
@@ -223,14 +225,22 @@ export const Sidebar = observer(() => {
 
   return (
     <div className="w-64 h-full bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-colors duration-200">
+      {/* Header */}
       <div className="h-16 px-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <img src="/src/assets/zhixia-logo.svg" alt="Logo" className="w-10 h-10" />
+          <img src={logo} alt="Logo" className="w-10 h-10" />
           <span className="font-bold text-lg text-gray-700 dark:text-gray-200">知夏笔记</span>
         </div>
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1">
            <button 
-             onClick={() => uiStore.resetProject()} 
+             onClick={() => fileStore.loadFileTree()}
+             className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 rounded transition-colors"
+             title="Refresh"
+           >
+             <RotateCw size={16} className={fileStore.isLoading ? "animate-spin" : ""} />
+           </button>
+           <button 
+             onClick={() => uiStore.resetProject()}  
              className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 rounded transition-colors"
              title="Switch Project"
            >

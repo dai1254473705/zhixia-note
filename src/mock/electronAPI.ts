@@ -64,6 +64,7 @@ const mockConfig: AppConfig = {
   themeMode: 'system',
   themeColor: 'fresh-green',
   repoPath: '/mock/repo',
+  recentProjects: ['/mock/repo'],
   encryption: { enabled: false }
 };
 
@@ -71,7 +72,9 @@ const mockGitStatus: GitStatus = {
   status: 'idle',
   ahead: 0,
   behind: 0,
-  conflictedFiles: []
+  modified: 0,
+  conflictedFiles: [],
+  files: {}
 };
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -133,6 +136,21 @@ export const setupMockApi = () => {
       console.log(`[Mock] Rename ${oldPath} to ${newName}`);
       return { success: true };
     },
+    copyToAssets: async (sourcePath, currentMdPath) => {
+      await wait(MOCK_DELAY);
+      console.log(`[Mock] Copy ${sourcePath} to assets near ${currentMdPath}`);
+      return { success: true, data: 'assets/image.png' };
+    },
+    exportHtml: async () => {
+      await wait(MOCK_DELAY);
+      console.log('[Mock] Export HTML');
+      return { success: true, data: '/path/to/exported.html' };
+    },
+    exportPdf: async () => {
+      await wait(MOCK_DELAY);
+      console.log('[Mock] Export PDF');
+      return { success: true, data: '/path/to/exported.pdf' };
+    },
 
     // Git
     getGitStatus: async () => {
@@ -153,11 +171,29 @@ export const setupMockApi = () => {
       console.log(`[Mock] Init git in ${path}`);
       return { success: true };
     },
+    commitGit: async (message) => {
+      await wait(500);
+      console.log(`[Mock] Commit: ${message}`);
+      return { success: true, data: mockGitStatus };
+    },
+    addGit: async (path) => {
+      await wait(300);
+      console.log(`[Mock] Add ${path}`);
+      return { success: true };
+    },
+    getGitDiff: async () => {
+      await wait(300);
+      return { success: true, data: 'diff --git ...' };
+    },
 
     // Project
     openDirectory: async () => {
       await wait(500);
       return { success: true, data: { canceled: false, filePaths: ['/mock/selected/path'] } };
+    },
+    openFile: async () => {
+      await wait(500);
+      return { success: true, data: { canceled: false, filePaths: ['/mock/selected/file.png'] } };
     },
     setProject: async (path) => {
       await wait(300);
@@ -165,6 +201,11 @@ export const setupMockApi = () => {
       mockConfig.repoPath = path;
       return { success: true };
     },
+    showItemInFolder: async (path) => {
+      console.log(`[Mock] Show in folder: ${path}`);
+      return { success: true };
+    },
+    getLogPath: async () => ({ success: true, data: '/mock/path/to/debug.log' }),
 
     // Crypto
     encryptContent: async (content) => {

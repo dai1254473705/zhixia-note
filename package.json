@@ -2,7 +2,7 @@
   "name": "zhixia-note",
   "productName": "知夏笔记",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.8",
   "type": "commonjs",
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,11 @@
   },
   "main": "dist-electron/main.js",
   "dependencies": {
+    "fs-extra": "^11.3.2",
+    "simple-git": "^3.28.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@headlessui/react": "^2.2.9",
@@ -20,26 +25,16 @@
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@tailwindcss/typography": "^0.5.19",
     "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "docx-templates": "^4.14.1",
-    "fs-extra": "^11.3.2",
-    "gray-matter": "^4.0.3",
     "highlight.js": "^11.11.1",
-    "html-to-pdfmake": "^2.5.31",
     "lucide-react": "^0.562.0",
     "marked": "^16.3.0",
     "mermaid": "^11.12.2",
     "mobx": "^6.15.0",
     "mobx-react-lite": "^4.1.1",
-    "pdfmake": "^0.2.20",
     "prettier": "^3.8.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "simple-git": "^3.28.0",
     "tailwind-merge": "^3.4.0",
-    "uuid": "^13.0.0"
-  },
-  "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.6.0",
@@ -62,5 +57,47 @@
     "vite": "^5.4.0",
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6"
+  },
+  "build": {
+    "appId": "com.zhixia.note",
+    "productName": "知夏笔记",
+    "copyright": "Copyright © 2026 知夏笔记",
+    "mac": {
+      "icon": "src/assets/zhixia-logo.png",
+      "target": [
+        "dmg"
+      ]
+    },
+    "dmg": {
+      "title": "知夏笔记 - 感谢您的使用",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/*.{o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.vscode,.trae}"
+    ],
+    "asar": true,
+    "compression": "store"
   }
 }

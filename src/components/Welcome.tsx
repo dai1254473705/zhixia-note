@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Github, FolderPlus, FolderOpen, Loader2, ArrowLeft } from 'lucide-react';
+import logo from '../assets/zhixia-logo.svg';
 
 export const Welcome = observer(() => {
   const [loading, setLoading] = useState(false);
@@ -8,6 +9,7 @@ export const Welcome = observer(() => {
   const [mode, setMode] = useState<'menu' | 'clone'>('menu');
   const [repoUrl, setRepoUrl] = useState('');
   const [recentProjects, setRecentProjects] = useState<string[]>([]);
+  const [logPath, setLogPath] = useState('');
 
   useEffect(() => {
     // Load recent projects on mount
@@ -18,6 +20,12 @@ export const Welcome = observer(() => {
         if (res.success && res.data?.recentProjects) {
           console.log('Welcome: Setting recent projects', res.data.recentProjects);
           setRecentProjects(res.data.recentProjects);
+        }
+        
+        // Load Log Path
+        const logRes = await window.electronAPI.getLogPath();
+        if (logRes.success && logRes.data) {
+          setLogPath(logRes.data);
         }
       } catch (e) {
         console.error('Failed to load recent projects', e);
@@ -129,12 +137,23 @@ export const Welcome = observer(() => {
     <div className="flex flex-col items-center justify-center h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-8">
       <div className="max-w-4xl w-full space-y-12">
         <div className="text-center space-y-4 flex flex-col items-center">
-          <img src="/src/assets/zhixia-logo.svg" alt="Logo" className="w-24 h-24 mb-4" />
+          <img src={logo} alt="Logo" className="w-24 h-24 mb-4" />
           <h1 className="text-4xl font-bold tracking-tight">Welcome to 知夏笔记</h1>
           <p className="text-xl text-gray-500 dark:text-gray-400">
             A local-first, GitHub-synced Markdown notebook
           </p>
         </div>
+
+        {logPath && (
+          <div className="w-full bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800 text-center">
+             <p className="text-sm text-blue-800 dark:text-blue-300">
+               <span className="font-semibold">Log File:</span> {logPath}
+             </p>
+             <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+               Press <kbd className="px-2 py-0.5 bg-white dark:bg-gray-800 border rounded shadow-sm">F12</kbd> or <kbd className="px-2 py-0.5 bg-white dark:bg-gray-800 border rounded shadow-sm">Cmd/Ctrl + Shift + I</kbd> to toggle Developer Tools
+             </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <button

@@ -1,7 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { useStore } from '../store';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
-import { useEffect } from 'react';
 import { cn } from '../utils/cn';
 
 export const ToastContainer = observer(() => {

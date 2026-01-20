@@ -106,20 +106,26 @@ export class FileService {
     const depth = relativePath.split(path.sep).length;
     
     // Allow max depth - 1 for folders, so files can be inside
-    if (depth >= MAX_DEPTH) { 
+    if (depth > MAX_DEPTH) { 
       throw new Error(`Cannot create directory at this depth (Max ${MAX_DEPTH})`);
     }
 
-    if (await fs.pathExists(fullPath)) {
-      throw new Error('Directory already exists');
+    let finalName = name;
+    let finalPath = fullPath;
+    let counter = 1;
+
+    while (await fs.pathExists(finalPath)) {
+      finalName = `${name} ${counter}`;
+      finalPath = path.join(parentPath, finalName);
+      counter++;
     }
 
-    await fs.ensureDir(fullPath);
+    await fs.ensureDir(finalPath);
 
     return {
       id: uuidv4(),
-      name,
-      path: fullPath,
+      name: finalName,
+      path: finalPath,
       type: 'directory',
       level: depth - 1,
       children: []

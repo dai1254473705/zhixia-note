@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // System
   showItemInFolder: (path) => ipcRenderer.invoke('system:showItemInFolder', path),
+  getLogPath: () => ipcRenderer.invoke('system:getLogPath'),
 
   // Project
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),

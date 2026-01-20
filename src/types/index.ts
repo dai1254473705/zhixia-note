@@ -71,3 +71,12 @@ export interface IpcResponse<T = unknown> {
   data?: T;
   error?: string;
 }
+
+export interface IpcApi {
+  // System
+  showItemInFolder: (path: string) => Promise<IpcResponse<void>>;
+  getLogPath: () => Promise<IpcResponse<string>>;
+
+  // Project
+  setProject: (repoPath: string) => Promise<IpcResponse<void>>;
+}

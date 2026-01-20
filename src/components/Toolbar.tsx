@@ -1,17 +1,19 @@
-import type { ThemeMode, ViewMode } from '../types';
+import type { ThemeMode } from '../types';
 import { observer } from 'mobx-react-lite';
 import { useStore } from '../store';
-import { RefreshCw, Check, AlertCircle, Sun, Moon, Monitor, Palette, Cloud, UploadCloud, Eye, Edit3, Columns, HelpCircle, Download, FileCode, FileText } from 'lucide-react';
+import { RefreshCw, Check, AlertCircle, Sun, Moon, Monitor, Palette, Cloud, UploadCloud, Eye, Edit3, Columns, HelpCircle, Download, FileCode, FileText, Loader2 } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { cn } from '../utils/cn';
 import { THEME_COLORS } from '../constants/theme';
 import { useState } from 'react';
 import { MarkdownHelp } from './MarkdownHelp';
 import { marked } from 'marked';
+// import { toast } from '../utils/toast'; 
 
 export const Toolbar = observer(() => {
   const { gitStore, uiStore, fileStore } = useStore();
   const [showHelp, setShowHelp] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleSync = () => {
     gitStore.sync();
@@ -69,31 +71,156 @@ export const Toolbar = observer(() => {
   const handleExport = async (type: 'html' | 'pdf') => {
     if (!fileStore.currentFile || !fileStore.currentContent) return;
     
-    // Generate HTML
-    const htmlBody = await marked.parse(fileStore.currentContent);
-    
-    // Basic Template
-    const fullHtml = `
+    setIsExporting(true);
+    try {
+      // Generate HTML
+      const htmlBody = await marked.parse(fileStore.currentContent);
+      
+      // Basic Template
+      const fullHtml = `
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <title>${fileStore.currentFile.name}</title>
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; padding: 2em; max-width: 900px; margin: 0 auto; line-height: 1.6; color: #333; }
-  h1, h2, h3, h4, h5, h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; }
-  h1 { font-size: 2em; border-bottom: 1px solid #eaecef; padding-bottom: .3em; }
-  h2 { font-size: 1.5em; border-bottom: 1px solid #eaecef; padding-bottom: .3em; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    padding: 2em;
+    max-width: 900px;
+    margin: 0 auto;
+    line-height: 1.6;
+    color: #24292f;
+    background-color: #ffffff;
+  }
+  
+  /* GitHub Markdown CSS Style */
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #24292f;
+  }
+  
+  h1 { font-size: 2em; border-bottom: 1px solid #d0d7de; padding-bottom: .3em; }
+  h2 { font-size: 1.5em; border-bottom: 1px solid #d0d7de; padding-bottom: .3em; }
+  h3 { font-size: 1.25em; }
+  h4 { font-size: 1em; }
+  h5 { font-size: 0.875em; }
+  h6 { font-size: 0.85em; color: #57606a; }
+  
   p { margin-top: 0; margin-bottom: 16px; }
-  code { padding: .2em .4em; margin: 0; font-size: 85%; background-color: rgba(27,31,35,.05); border-radius: 3px; }
-  pre { padding: 16px; overflow: auto; font-size: 85%; line-height: 1.45; background-color: #f6f8fa; border-radius: 3px; }
-  pre code { background-color: transparent; padding: 0; }
-  blockquote { padding: 0 1em; color: #6a737d; border-left: .25em solid #dfe2e5; margin: 0; }
-  img { max-width: 100%; box-sizing: content-box; background-color: #fff; }
-  table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
-  table th, table td { padding: 6px 13px; border: 1px solid #dfe2e5; }
-  table tr { background-color: #fff; border-top: 1px solid #c6cbd1; }
-  table tr:nth-child(2n) { background-color: #f6f8fa; }
+  
+  code {
+    padding: .2em .4em;
+    margin: 0;
+    font-size: 85%;
+    background-color: rgba(175, 184, 193, 0.2);
+    border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  }
+  
+  pre {
+    padding: 16px;
+    overflow: auto;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: #f6f8fa;
+    border-radius: 6px;
+    margin-bottom: 16px;
+  }
+  
+  pre code {
+    background-color: transparent;
+    padding: 0;
+  }
+  
+  blockquote {
+    padding: 0 1em;
+    color: #57606a;
+    border-left: .25em solid #d0d7de;
+    margin: 0 0 16px 0;
+  }
+  
+  img {
+    max-width: 100%;
+    box-sizing: content-box;
+    background-color: #fff;
+    border-style: none;
+  }
+  
+  table {
+    border-spacing: 0;
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 16px;
+    display: block;
+    overflow: auto;
+  }
+  
+  table th, table td {
+    padding: 6px 13px;
+    border: 1px solid #d0d7de;
+  }
+  
+  table tr {
+    background-color: #fff;
+    border-top: 1px solid #d8dee4;
+  }
+  
+  table tr:nth-child(2n) {
+    background-color: #f6f8fa;
+  }
+  
+  hr {
+    height: 0.25em;
+    padding: 0;
+    margin: 24px 0;
+    background-color: #d0d7de;
+    border: 0;
+  }
+  
+  a {
+    color: #0969da;
+    text-decoration: none;
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
+  
+  ul, ol {
+    padding-left: 2em;
+    margin-top: 0;
+    margin-bottom: 16px;
+  }
+  
+  li > p {
+    margin-top: 16px;
+  }
+  
+  li + li {
+    margin-top: .25em;
+  }
+  
+  /* Task lists */
+  ul.contains-task-list {
+    list-style-type: none;
+    padding-left: 0;
+  }
+  
+  .task-list-item-checkbox {
+    margin: 0 .2em .25em -1.6em;
+    vertical-align: middle;
+  }
+
+  @media print {
+    body {
+      padding: 0;
+      max-width: 100%;
+    }
+  }
 </style>
 </head>
 <body>
@@ -101,10 +228,23 @@ ${htmlBody}
 </body>
 </html>`;
 
-    if (type === 'html') {
-       await window.electronAPI.exportHtml(fullHtml, fileStore.currentFile.name.replace('.md', '.html'));
-    } else {
-       await window.electronAPI.exportPdf(fullHtml, fileStore.currentFile.name.replace('.md', '.pdf'));
+      let res;
+      if (type === 'html') {
+        res = await window.electronAPI.exportHtml(fullHtml, fileStore.currentFile.name.replace('.md', '.html'));
+      } else {
+        res = await window.electronAPI.exportPdf(fullHtml, fileStore.currentFile.name.replace('.md', '.pdf'));
+      }
+
+      if (res.success) {
+        alert(`Successfully exported to ${res.data}`);
+      } else if (res.error !== 'Canceled') {
+        alert(`Export failed: ${res.error}`);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      alert(`Export error: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -185,8 +325,9 @@ ${htmlBody}
                 <button
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors text-gray-500 hover:text-primary"
                   title="Export"
+                  disabled={isExporting}
                 >
-                  <Download size={18} />
+                  {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                 </button>
               </DropdownMenu.Trigger>
               <DropdownMenu.Portal>

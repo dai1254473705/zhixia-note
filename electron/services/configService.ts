@@ -43,6 +43,7 @@ export class ConfigService {
   async init(): Promise<void> {
     try {
       // 1. Ensure root dir exists
+      console.log('Ensure root dir:', this.rootDir);
       await fs.ensureDir(this.rootDir);
 
       // 2. Ensure .gitignore exists and ignores sensitive files
@@ -60,6 +61,7 @@ export class ConfigService {
       }
 
       // 3. Ensure config.json exists
+      console.log('Check config path:', this.configPath);
       if (!await fs.pathExists(this.configPath)) {
         // Initial config with empty repoPath, waiting for user selection
         const initialConfig: AppConfig = { 

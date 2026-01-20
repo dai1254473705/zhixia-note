@@ -19,6 +19,24 @@ export const Editor = observer(() => {
   // Sync Scroll State
   const isScrolling = useRef(false);
 
+  const triggerSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    fileStore.saveCurrentFile();
+  }, [fileStore]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        triggerSave();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [triggerSave]);
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     fileStore.updateContent(e.target.value);
     
@@ -59,6 +77,14 @@ export const Editor = observer(() => {
     
     fileStore.updateContent(newText);
     
+    // Debounced Auto Save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      fileStore.saveCurrentFile();
+    }, 1000);
+    
     // Restore cursor / focus
     setTimeout(() => {
       textarea.focus();
@@ -92,6 +118,7 @@ export const Editor = observer(() => {
         const suffix = `)`;
         
         handleInsert(prefix + relativePath, suffix);
+        triggerSave();
       } else {
         console.error('Upload failed:', copyResult.error);
         // Could add toast here
@@ -212,14 +239,27 @@ export const Editor = observer(() => {
   const showEditor = uiStore.viewMode === 'editor' || uiStore.viewMode === 'split';
   const showPreview = uiStore.viewMode === 'preview' || uiStore.viewMode === 'split';
   const showResizer = uiStore.viewMode === 'split';
+  const showToolbar = uiStore.viewMode !== 'preview';
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Toolbar Area */}
-      <EditorToolbar onInsert={handleInsert} onUpload={handleUpload} onFormat={handleFormat} />
+      {showToolbar && (
+        <EditorToolbar onInsert={handleInsert} onUpload={handleUpload} onFormat={handleFormat} />
+      )}
 
       {/* Split Pane Area */}
       <div id="editor-container" className="flex-1 flex overflow-hidden relative">
+        {/* Auto Saving Overlay */}
+        {fileStore.isAutoSaving && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+            <div className="flex flex-col items-center space-y-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)]"></div>
+              <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Auto Saving...</p>
+            </div>
+          </div>
+        )}
+
         {/* Editor */}
         {showEditor && (
           <div 
@@ -228,7 +268,7 @@ export const Editor = observer(() => {
           >
              <textarea 
                ref={textareaRef}
-               className="w-full h-full resize-none p-8 outline-none bg-transparent text-gray-800 dark:text-gray-200 font-mono text-base leading-relaxed custom-scrollbar"
+               className="w-full h-full resize-none p-6 md:p-10 lg:p-12 outline-none bg-transparent text-gray-800 dark:text-gray-200 font-mono text-base leading-relaxed custom-scrollbar"
                value={fileStore.currentContent}
                onChange={handleChange}
                onScroll={handleScroll}

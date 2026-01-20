@@ -4,8 +4,20 @@ import './index.css'
 import './styles/markdown-themes.css' // Import custom markdown themes
 import { setupMockApi } from './mock/electronAPI'
 
-// Initialize Mock API BEFORE importing any stores or App
-setupMockApi();
+// Global Error Handler for Debugging White Screen
+window.onerror = function(message, source, lineno, colno, error) {
+  alert(`Global Error: ${message}\nSource: ${source}:${lineno}:${colno}\nStack: ${error?.stack}`);
+};
+
+window.onunhandledrejection = function(event) {
+  alert(`Unhandled Rejection: ${event.reason}`);
+};
+
+// Initialize Mock API ONLY if not running in Electron
+// When running in Electron, window.electronAPI is injected by preload.js
+if (!window.electronAPI) {
+  setupMockApi();
+}
 
 import App from './App.tsx'
 import { RootStore, StoreContext } from './store'

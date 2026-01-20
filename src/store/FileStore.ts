@@ -9,6 +9,7 @@ export class FileStore {
   rootPath: string = '';
   isLoading: boolean = false;
   isSaving: boolean = false;
+  isAutoSaving: boolean = false;
   unsavedFilePaths: Set<string> = new Set(); // Track files with unsaved changes
   searchQuery: string = '';
 
@@ -86,6 +87,30 @@ export class FileStore {
   async selectFile(node: FileNode) {
     if (node.type !== 'file') return;
     
+    // Avoid reloading the same file
+    if (this.currentFile?.path === node.path) return;
+
+    // Auto-save if current file has unsaved changes
+    if (this.currentFile && this.unsavedFilePaths.has(this.currentFile.path)) {
+      runInAction(() => {
+        this.isAutoSaving = true;
+      });
+      try {
+        await this.saveCurrentFile();
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        alert('自动保存失败，已拦截跳转。请手动保存或检查文件权限。');
+        runInAction(() => {
+          this.isAutoSaving = false;
+        });
+        return; // Block navigation
+      } finally {
+        runInAction(() => {
+          this.isAutoSaving = false;
+        });
+      }
+    }
+    
     this.currentFile = node;
     this.isLoading = true;
     try {
@@ -94,22 +119,6 @@ export class FileStore {
         runInAction(() => {
           this.currentContent = res.data || '';
           this.originalContent = res.data || ''; // Set original content
-          // If we switch back to a file that is in unsavedFilePaths, we might want to restore its dirty content?
-          // Currently, switching files loses unsaved changes in memory if not persisted.
-          // The current implementation saves on debounce.
-          // But "dirty state" usually means "differs from disk".
-          // If we auto-save, it's rarely dirty for long.
-          // However, user asked for "edited state".
-          // If we save automatically, the file on disk IS the current content.
-          // So "dirty" might mean "unsaved to git" or "modified in this session"?
-          // Usually "dirty" means "unsaved to disk".
-          // If we have auto-save, the dot will appear briefly.
-          // Unless the user wants manual save?
-          // The prompt says "modified... auto save".
-          // Wait, prompt says: "modified filename... blur auto save".
-          // It also says "if current file has modification, best show edited state".
-          // If auto-save is active (which it is in Editor.tsx), the state is transient.
-          // Maybe I should only remove dirty state when save completes.
         });
       }
     } catch (error) {
@@ -157,6 +166,7 @@ export class FileStore {
       // If we auto-add, the file status changes from 'M' (workdir) to 'M' (index) or 'A' (index).
     } catch (error) {
       console.error('Failed to save file:', error);
+      throw error;
     } finally {
       runInAction(() => {
         this.isSaving = false;

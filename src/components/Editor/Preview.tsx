@@ -157,9 +157,9 @@ export const Preview = observer(({ content }: { content: string }) => {
 
   const getThemeClass = () => {
     if (!uiStore.markdownTheme || uiStore.markdownTheme === 'default') {
-      return 'prose dark:prose-invert max-w-none p-8';
+      return 'prose dark:prose-invert max-w-none p-6 md:p-10 lg:p-12';
     }
-    return `markdown-theme-container md-style-${uiStore.markdownTheme} p-8`;
+    return `markdown-theme-container md-style-${uiStore.markdownTheme} p-6 md:p-10 lg:p-12`;
   };
 
   const themeStyles = {

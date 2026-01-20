@@ -28,6 +28,8 @@ export class UIStore {
           this.applyTheme();
         });
       }
+    } catch (error) {
+      console.error('Failed to init theme:', error);
     } finally {
       runInAction(() => {
         this.isLoading = false;
