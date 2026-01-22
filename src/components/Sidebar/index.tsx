@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Tooltip from '@radix-ui/react-tooltip';
+import { ExportProgressDialog } from '../ExportProgressDialog';
+import type { ExportProgressItem } from '../../store/FileStore';
 
 // Create context for expand/collapse state
 interface ExpandContextType {
@@ -549,6 +551,19 @@ export const Sidebar = observer(() => {
           )
         )}
       </div>
+
+      {/* Export Progress Dialog */}
+      <ExportProgressDialog
+        isOpen={fileStore.exportDialog.isOpen}
+        title={fileStore.exportDialog.title}
+        currentFile={fileStore.exportDialog.currentFile}
+        totalProgress={fileStore.exportDialog.totalProgress}
+        items={fileStore.exportDialog.items}
+        status={fileStore.exportDialog.status}
+        completedCount={fileStore.exportDialog.completedCount}
+        totalCount={fileStore.exportDialog.totalCount}
+        onClose={fileStore.closeExportDialog.bind(fileStore)}
+      />
     </div>
   );
 });

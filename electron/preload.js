@@ -36,6 +36,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // System
   showItemInFolder: (path) => ipcRenderer.invoke('system:showItemInFolder', path),
   getLogPath: () => ipcRenderer.invoke('system:getLogPath'),
+  setLogPath: (newPath) => ipcRenderer.invoke('system:setLogPath', newPath),
+  openLogDirectory: () => ipcRenderer.invoke('system:openLogDirectory'),
+  getAllLogFiles: () => ipcRenderer.invoke('system:getAllLogFiles'),
 
   // Project
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),

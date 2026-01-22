@@ -1,12 +1,12 @@
 import type { ThemeMode } from '../types';
 import { observer } from 'mobx-react-lite';
 import { useStore } from '../store';
-import { RefreshCw, Check, AlertCircle, Sun, Moon, Monitor, Palette, Cloud, UploadCloud, Eye, Edit3, Columns, HelpCircle, Download, FileCode, FileText, Loader2 } from 'lucide-react';
+import { RefreshCw, Check, AlertCircle, Sun, Moon, Monitor, Palette, Cloud, UploadCloud, Eye, Edit3, Columns, HelpCircle, Download, FileCode, FileText, Loader2, Settings, FileSearch, FolderOpen } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { cn } from '../utils/cn';
 import { THEME_COLORS } from '../constants/theme';
 import { useState } from 'react';
-import { marked } from 'marked';
+import { marked, Renderer } from 'marked';
 
 interface ToolbarProps {
   onHelpClick?: () => void;
@@ -71,11 +71,49 @@ export const Toolbar = observer(({ onHelpClick }: ToolbarProps) => {
 
   const handleExport = async (type: 'html' | 'pdf') => {
     if (!fileStore.currentFile || !fileStore.currentContent) return;
-    
+
     setIsExporting(true);
     try {
-      // Generate HTML
-      const htmlBody = await marked.parse(fileStore.currentContent);
+      // Create custom renderer for image path conversion
+      const renderer = new Renderer();
+
+      renderer.image = ({ href, title, text }: { href: string; title?: string | null; text: string }) => {
+        if (!href) return text;
+
+        let src = href;
+        let style = '';
+
+        // Parse query params for size (e.g. ?w=100px)
+        try {
+          const urlObj = new URL(href, 'http://dummy');
+          const width = urlObj.searchParams.get('w');
+          const height = urlObj.searchParams.get('h');
+
+          if (width) style += `width: ${width};`;
+          if (height) style += `height: ${height};`;
+        } catch {
+          // Ignore parsing errors
+        }
+
+        // If it's a relative path and not a web URL or data URL or media:// URL
+        if (!href.startsWith('http') && !href.startsWith('data:') && !href.startsWith('media:')) {
+          if (fileStore.currentFile) {
+            const currentFilePath = fileStore.currentFile.path;
+            const lastSlashIndex = currentFilePath.lastIndexOf('/');
+            if (lastSlashIndex !== -1) {
+              const currentDir = currentFilePath.substring(0, lastSlashIndex);
+              const absolutePath = `${currentDir}/${href}`;
+              // Use media://local protocol
+              src = `media://local${absolutePath}`;
+            }
+          }
+        }
+
+        return `<img src="${src}" alt="${text}" title="${title || ''}" style="${style}" />`;
+      };
+
+      // Generate HTML with custom renderer
+      const htmlBody = await marked.parse(fileStore.currentContent, { renderer });
       
       // Basic Template
       const fullHtml = `
@@ -237,15 +275,22 @@ ${htmlBody}
       }
 
       if (res.success) {
-        alert(`Successfully exported to ${res.data}`);
+        fileStore.toastStore?.success(`已导出 ${fileStore.currentFile.name.replace('.md', type === 'html' ? '.html' : '.pdf')}`);
       } else if (res.error !== 'Canceled') {
-        alert(`Export failed: ${res.error}`);
+        fileStore.toastStore?.error(`导出失败: ${res.error}`);
       }
     } catch (error) {
       console.error('Export error:', error);
-      alert(`Export error: ${error instanceof Error ? error.message : String(error)}`);
+      fileStore.toastStore?.error(`导出错误: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleOpenLogDirectory = async () => {
+    const res = await window.electronAPI.openLogDirectory();
+    if (!res.success) {
+      fileStore.toastStore?.error('无法打开日志目录');
     }
   };
 
@@ -348,6 +393,33 @@ ${htmlBody}
                     onSelect={() => handleExport('pdf')}
                   >
                     <FileText size={14} className="mr-2" /> Export to PDF
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+
+            {/* Settings / Logs Menu */}
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <button
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors text-gray-500 hover:text-primary"
+                  title="设置"
+                >
+                  <Settings size={18} />
+                </button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  className="min-w-[200px] bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                  align="end"
+                  sideOffset={5}
+                >
+                  <DropdownMenu.Item
+                    className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded outline-none"
+                    onSelect={handleOpenLogDirectory}
+                  >
+                    <FolderOpen size={14} className="mr-2" />
+                    打开日志目录
                   </DropdownMenu.Item>
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>

@@ -1,42 +1,26 @@
 import { app, BrowserWindow, ipcMain, shell, dialog, Menu, protocol, net, globalShortcut } from 'electron'
 import path from 'path'
 import { fileURLToPath, pathToFileURL } from 'url'
-import fs from 'fs' // Changed to fs for sync logging
+import fs from 'fs'
 import fsPromises from 'fs/promises'
 import { configService } from './services/configService'
 import { fileService } from './services/fileService'
 import { gitService } from './services/gitService'
 import { cryptoService } from './services/cryptoService'
+import { logService, log, logError, logWarn } from './services/logService'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
-// --- Logging Setup ---
-const logPath = path.join(app.getPath('home'), 'Desktop', 'zhixia_debug.log');
-
-try {
-    fs.writeFileSync(logPath, `\n\n--- Session Start: ${new Date().toISOString()} ---\n`);
-} catch {
-    // Ignore log error
-}
-
-function log(msg: string) {
-    try {
-        console.log(msg);
-        fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${msg}\n`);
-    } catch {
-        // Ignore
-    }
-}
-
-log(`App Path: ${app.getAppPath()}`);
-log(`UserData Path: ${app.getPath('userData')}`);
-log(`Log Path: ${logPath}`);
 
 // Register Privileged Schemes
 protocol.registerSchemesAsPrivileged([
   { scheme: 'media', privileges: { secure: true, supportFetchAPI: true, standard: true, bypassCSP: true } }
 ])
+
+// Initial logs
+log(`App Path: ${app.getAppPath()}`);
+log(`UserData Path: ${app.getPath('userData')}`);
+log(`Log Path: ${logService.getLogPath()}`);
 
 // Disable hardware acceleration
 app.disableHardwareAcceleration()
@@ -386,59 +370,134 @@ ipcMain.handle('file:searchContent', async (_, query) => {
   }
 })
 
-const processHtmlContent = async (htmlContent: string) => {
-  // Use regex to find img src="media://..."
-  // This is a simple regex, might need more robustness for complex HTML
-  // But for marked output, it's usually predictable
-  const regex = /<img[^>]+src="media:\/\/([^"]+)"/g;
-  let processedHtml = htmlContent;
-  
-  // We need to collect all replacements first to avoid index issues if we replace in place?
-  // Actually string.replace with async callback is tricky.
-  // Let's use a different approach: find all matches, process them, then replace.
-  
+// Process images for HTML export - copy files to assets folder and update paths
+// Returns: { html: processedHtml, images: Array<{original: string, copied: string}> }
+const processHtmlForImages = async (
+  htmlContent: string,
+  exportDir: string,
+  baseFileName: string,
+  onProgress?: (current: number, total: number, fileName: string) => void
+) => {
+  // Find all img src="media://..." patterns
+  // The pattern matches: src="media://local/Users/..." or src="media:///Users/..."
+  const regex = /<img[^>]+src="media:\/\/(?:local|\/)?([^"]+)"/g;
   const matches = [...htmlContent.matchAll(regex)];
-  
-  for (const match of matches) {
-    const mediaPath = match[1]; // The part after media://
-    
+
+  if (matches.length === 0) {
+    return { html: htmlContent, images: [] };
+  }
+
+  let processedHtml = htmlContent;
+  const copiedImages: Array<{ original: string; copied: string }> = [];
+
+  // Create assets directory next to the HTML file
+  // Use a unique name to avoid conflicts: {basename}_assets
+  const assetsDir = path.join(exportDir, `${baseFileName}_assets`);
+
+  try {
+    await fsPromises.mkdir(assetsDir, { recursive: true });
+  } catch (e) {
+    log(`Failed to create assets directory: ${e}`);
+  }
+
+  // Track processed images to avoid duplicates with same content
+  const processedHashes = new Map<string, string>(); // hash -> filename
+
+  for (let i = 0; i < matches.length; i++) {
+    const match = matches[i];
+    const fullPathMatch = match[0]; // The entire src="media://..." part
+    const mediaPath = match[1]; // The part after media://local or media:///
+
     try {
       // Decode path
-      const decodedPath = decodeURIComponent(mediaPath);
-      // media:// usually has the full absolute path after it in our implementation?
-      // In main.ts protocol handler: const filePath = parsedUrl.pathname
-      // In Preview.tsx: src={`media://${encodedPath}...`}
-      // So mediaPath is likely "/Users/..." or "C:/Users/..."
-      
+      let decodedPath = decodeURIComponent(mediaPath);
+
+      // Handle Windows path issues - remove leading slash if present for Windows absolute paths
       let localPath = decodedPath;
-      // Handle Windows path issues if any (e.g. leading slash)
       if (process.platform === 'win32' && localPath.startsWith('/') && /^\/[a-zA-Z]:/.test(localPath)) {
         localPath = localPath.slice(1);
       }
-      
+
+      log(`Processing image: ${mediaPath} -> ${localPath}`);
+
+      // Check if file exists
+      try {
+        await fsPromises.access(localPath);
+      } catch {
+        log(`Image file not found: ${localPath}`);
+        continue;
+      }
+
+      // Read the file
+      const fileBuffer = await fsPromises.readFile(localPath);
+      const ext = path.extname(localPath) || '.png';
+
+      // Generate a unique filename
+      // Use counter + random to avoid conflicts
+      const imageFileName = `image_${i + 1}${ext}`;
+      const destPath = path.join(assetsDir, imageFileName);
+
+      // Copy image to assets folder
+      await fsPromises.copyFile(localPath, destPath);
+      log(`Copied image from ${localPath} to ${destPath}`);
+
+      // Update HTML to reference the copied image
+      // Use relative path: basename_assets/image_xxx.png
+      const relativePath = `${baseFileName}_assets/${imageFileName}`;
+      processedHtml = processedHtml.replace(fullPathMatch, `src="${relativePath}"`);
+
+      copiedImages.push({ original: localPath, copied: destPath });
+
+      // Report progress
+      if (onProgress) {
+        onProgress(i + 1, matches.length, imageFileName);
+      }
+
+    } catch (e) {
+      log(`Failed to copy image: ${mediaPath} ${e}`);
+      // Keep original src if failed
+    }
+  }
+
+  return { html: processedHtml, images: copiedImages };
+};
+
+// For PDF export, we still use base64 embedding since PDF needs everything in one file
+const processHtmlContentForPdf = async (htmlContent: string) => {
+  // Match media://local/... or media:///...
+  const regex = /<img[^>]+src="media:\/\/(?:local|\/)?([^"]+)"/g;
+  let processedHtml = htmlContent;
+  const matches = [...htmlContent.matchAll(regex)];
+
+  for (const match of matches) {
+    const fullPathMatch = match[0];
+    const mediaPath = match[1];
+
+    try {
+      const decodedPath = decodeURIComponent(mediaPath);
+
+      let localPath = decodedPath;
+      if (process.platform === 'win32' && localPath.startsWith('/') && /^\/[a-zA-Z]:/.test(localPath)) {
+        localPath = localPath.slice(1);
+      }
+
       const fileBuffer = await fsPromises.readFile(localPath);
       const base64 = fileBuffer.toString('base64');
       const ext = path.extname(localPath).slice(1);
       const mimeType = ext === 'svg' ? 'image/svg+xml' : `image/${ext}`;
-      
+
       const newSrc = `data:${mimeType};base64,${base64}`;
-      
-      // Replace only the src attribute value
-      // The regex match[0] includes <img ... src="media://..."
-      // We just want to replace media://... with data:...
-      // Let's replace the specific string instance
-      processedHtml = processedHtml.replace(`src="media://${mediaPath}"`, `src="${newSrc}"`);
-      
+      processedHtml = processedHtml.replace(fullPathMatch, `src="${newSrc}"`);
+
     } catch (e) {
-      log(`Failed to embed image: ${mediaPath} ${e}`);
-      // Keep original src if failed
+      log(`Failed to embed image for PDF: ${mediaPath} ${e}`);
     }
   }
-  
+
   return processedHtml;
 };
 
-ipcMain.handle('file:exportHtml', async (_, content, defaultPath) => {
+ipcMain.handle('file:exportHtml', async (event, content, defaultPath) => {
   try {
     const { filePath } = await dialog.showSaveDialog({
       title: '导出 HTML',
@@ -446,6 +505,10 @@ ipcMain.handle('file:exportHtml', async (_, content, defaultPath) => {
       filters: [{ name: 'HTML', extensions: ['html'] }]
     });
     if (filePath) {
+      // Get directory and base filename for assets folder
+      const exportDir = path.dirname(filePath);
+      const baseFileName = path.basename(filePath, path.extname(filePath));
+
       // Wrap content in a complete HTML document with proper styling
       const completeHtml = `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -528,7 +591,9 @@ ipcMain.handle('file:exportHtml', async (_, content, defaultPath) => {
 </body>
 </html>`;
 
-      const finalContent = await processHtmlContent(completeHtml);
+      // Process images - copy to assets folder
+      const { html: finalContent } = await processHtmlForImages(completeHtml, exportDir, baseFileName);
+
       await fsPromises.writeFile(filePath, finalContent);
       return { success: true, data: filePath };
     }
@@ -625,8 +690,8 @@ ipcMain.handle('file:exportPdf', async (_, htmlContent, defaultPath) => {
 </body>
 </html>`;
 
-      // Process images to base64 for PDF too, to ensure they load
-      const finalContent = await processHtmlContent(completeHtml);
+      // Process images to base64 for PDF
+      const finalContent = await processHtmlContentForPdf(completeHtml);
 
       // Get the icon path
       const iconPath = process.env.VITE_DEV_SERVER_URL
@@ -665,7 +730,13 @@ ipcMain.handle('file:exportPdf', async (_, htmlContent, defaultPath) => {
 ipcMain.handle('file:exportHtmlDirect', async (_, content, outputPath) => {
   try {
     console.log('exportHtmlDirect called with path:', outputPath);
-    const finalContent = await processHtmlContent(content);
+    // Get directory and base filename for assets folder
+    const exportDir = path.dirname(outputPath);
+    const baseFileName = path.basename(outputPath, path.extname(outputPath));
+
+    // Process images - copy to assets folder
+    const { html: finalContent } = await processHtmlForImages(content, exportDir, baseFileName);
+
     await fsPromises.writeFile(outputPath, finalContent);
     console.log('exportHtmlDirect successfully wrote:', outputPath);
     return { success: true, data: outputPath };
@@ -756,8 +827,8 @@ ipcMain.handle('file:exportPdfDirect', async (_, htmlContent, outputPath) => {
 </body>
 </html>`;
 
-    // Process images to base64 for PDF too, to ensure they load
-    const finalContent = await processHtmlContent(completeHtml);
+    // Process images to base64 for PDF
+    const finalContent = await processHtmlContentForPdf(completeHtml);
 
     // Get the icon path
     const iconPath = process.env.VITE_DEV_SERVER_URL
@@ -865,7 +936,34 @@ ipcMain.handle('system:showItemInFolder', async (_, path) => {
 });
 
 ipcMain.handle('system:getLogPath', async () => {
-    return { success: true, data: logPath };
+    return { success: true, data: logService.getLogPath() };
+});
+
+ipcMain.handle('system:setLogPath', async (_, newPath: string) => {
+  try {
+    const result = await logService.setLogPath(newPath);
+    return { success: result, data: logService.getLogPath() };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle('system:openLogDirectory', async () => {
+  try {
+    await logService.openLogDirectory();
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+ipcMain.handle('system:getAllLogFiles', async () => {
+  try {
+    const files = await logService.getAllLogFiles();
+    return { success: true, data: files };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
 });
 
 // Project

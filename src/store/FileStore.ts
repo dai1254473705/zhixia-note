@@ -17,6 +17,13 @@ interface OpenTab {
   isModified: boolean;
 }
 
+// Export progress item interface
+export interface ExportProgressItem {
+  fileName: string;
+  status: 'pending' | 'processing' | 'success' | 'error';
+  error?: string;
+}
+
 export class FileStore {
   fileTree: FileNode[] = [];
   currentFile: FileNode | null = null;
@@ -35,6 +42,26 @@ export class FileStore {
   openTabs: OpenTab[] = [];
   activeTabId: string | null = null;
   maxTabs: number = 10; // Maximum number of open tabs (set to 10 instead of 5 for better usability)
+
+  // Export progress dialog state
+  exportDialog: {
+    isOpen: boolean;
+    title: string;
+    currentFile?: string;
+    totalProgress: number;
+    items: ExportProgressItem[];
+    status: 'exporting' | 'completed' | 'error';
+    completedCount: number;
+    totalCount: number;
+  } = {
+    isOpen: false,
+    title: '导出',
+    totalProgress: 0,
+    items: [],
+    status: 'exporting',
+    completedCount: 0,
+    totalCount: 0
+  };
 
   public toastStore: ToastStore;
   private gitStore?: GitStore;
@@ -655,6 +682,23 @@ export class FileStore {
       console.log('Export directory:', exportDir);
       const results: { success: boolean; path?: string; error?: string }[] = [];
 
+      // Initialize export dialog
+      const formatName = format === 'md' ? 'Markdown' : format === 'html' ? 'HTML' : 'PDF';
+      runInAction(() => {
+        this.exportDialog = {
+          isOpen: true,
+          title: `批量导出 ${formatName}`,
+          totalProgress: 0,
+          items: files.map(f => ({
+            fileName: f.name,
+            status: 'pending' as const
+          })),
+          status: 'exporting' as const,
+          completedCount: 0,
+          totalCount: files.length
+        };
+      });
+
       // Import marked for HTML/PDF conversion
       const { marked } = await import('marked');
       marked.use({ breaks: true, gfm: true });
@@ -702,13 +746,30 @@ export class FileStore {
 
       let successCount = 0;
       let failCount = 0;
+      let currentIndex = 0;
 
       for (const file of files) {
+        currentIndex++;
+        const fileIndex = currentIndex - 1;
+
+        // Update progress - mark current file as processing
+        runInAction(() => {
+          this.exportDialog.items[fileIndex].status = 'processing';
+          this.exportDialog.items[fileIndex].fileName = file.name;
+          this.exportDialog.currentFile = file.name;
+          this.exportDialog.completedCount = currentIndex - 1;
+          this.exportDialog.totalProgress = ((currentIndex - 1) / files.length) * 100;
+        });
+
         try {
           const fileRes = await window.electronAPI.readFile(file.path);
           if (!fileRes.success || !fileRes.data) {
             console.error('Failed to read file:', file.name, fileRes.error);
             failCount++;
+            runInAction(() => {
+              this.exportDialog.items[fileIndex].status = 'error';
+              this.exportDialog.items[fileIndex].error = fileRes.error;
+            });
             results.push({ success: false, error: fileRes.error });
             continue;
           }
@@ -727,10 +788,17 @@ export class FileStore {
 
             if (saveRes.success) {
               successCount++;
+              runInAction(() => {
+                this.exportDialog.items[fileIndex].status = 'success';
+              });
               results.push({ success: true, path: exportPath });
             } else {
               console.error('Failed to export MD:', file.name, saveRes.error);
               failCount++;
+              runInAction(() => {
+                this.exportDialog.items[fileIndex].status = 'error';
+                this.exportDialog.items[fileIndex].error = saveRes.error;
+              });
               results.push({ success: false, error: saveRes.error });
             }
           } else if (format === 'html') {
@@ -827,10 +895,17 @@ export class FileStore {
             console.log('HTML export result:', file.name, res);
             if (res.success) {
               successCount++;
+              runInAction(() => {
+                this.exportDialog.items[fileIndex].status = 'success';
+              });
               results.push({ success: true, path: res.data });
             } else {
               console.error('Failed to export HTML:', file.name, res.error);
               failCount++;
+              runInAction(() => {
+                this.exportDialog.items[fileIndex].status = 'error';
+                this.exportDialog.items[fileIndex].error = res.error;
+              });
               results.push({ success: false, error: res.error });
             }
           } else if (format === 'pdf') {
@@ -846,16 +921,27 @@ export class FileStore {
             console.log('PDF export result:', file.name, res);
             if (res.success) {
               successCount++;
+              runInAction(() => {
+                this.exportDialog.items[fileIndex].status = 'success';
+              });
               results.push({ success: true, path: res.data });
             } else {
               console.error('Failed to export PDF:', file.name, res.error);
               failCount++;
+              runInAction(() => {
+                this.exportDialog.items[fileIndex].status = 'error';
+                this.exportDialog.items[fileIndex].error = res.error;
+              });
               results.push({ success: false, error: res.error });
             }
           }
         } catch (error) {
           console.error('Export error for file:', file.name, error);
           failCount++;
+          runInAction(() => {
+            this.exportDialog.items[fileIndex].status = 'error';
+            this.exportDialog.items[fileIndex].error = error instanceof Error ? error.message : 'Export failed';
+          });
           results.push({
             success: false,
             error: error instanceof Error ? error.message : 'Export failed'
@@ -865,6 +951,13 @@ export class FileStore {
 
       console.log('Export complete:', { successCount, failCount, total: files.length });
       console.log('Export results:', results);
+
+      // Update dialog to completed state
+      runInAction(() => {
+        this.exportDialog.status = failCount > 0 && successCount === 0 ? 'error' : 'completed';
+        this.exportDialog.completedCount = files.length;
+        this.exportDialog.totalProgress = 100;
+      });
 
       // Show appropriate message with export directory info
       if (successCount === files.length) {
@@ -878,8 +971,18 @@ export class FileStore {
       return { success: true, data: results };
     } catch (error) {
       console.error('Batch export failed:', error);
+      runInAction(() => {
+        this.exportDialog.status = 'error';
+      });
       this.toastStore?.error('批量导出失败');
       return { success: false, error: error instanceof Error ? error.message : 'Batch export failed' };
     }
+  }
+
+  // Close export dialog
+  closeExportDialog() {
+    runInAction(() => {
+      this.exportDialog.isOpen = false;
+    });
   }
 }

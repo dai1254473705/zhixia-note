@@ -37,6 +37,9 @@ declare global {
       // System
       showItemInFolder: (path: string) => Promise<IpcResponse<void>>;
       getLogPath: () => Promise<IpcResponse<string>>;
+      setLogPath: (newPath: string) => Promise<IpcResponse<string>>;
+      openLogDirectory: () => Promise<IpcResponse<void>>;
+      getAllLogFiles: () => Promise<IpcResponse<string[]>>;
 
       // Project
       openDirectory: () => Promise<IpcResponse<{ canceled: boolean; filePaths: string[] }>>;

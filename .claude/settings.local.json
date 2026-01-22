@@ -5,7 +5,9 @@
       "Bash(npm install:*)",
       "Bash(npm run dev:*)",
       "Bash(npm run build:*)",
-      "Bash(yarn build:*)"
+      "Bash(yarn build:*)",
+      "Bash(gh repo rename:*)",
+      "Bash(git remote set-url:*)"
     ]
   }
 }
