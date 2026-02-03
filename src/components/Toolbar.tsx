@@ -1,21 +1,26 @@
 import type { ThemeMode } from '../types';
 import { observer } from 'mobx-react-lite';
 import { useStore } from '../store';
-import { RefreshCw, Check, AlertCircle, Sun, Moon, Monitor, Palette, Cloud, UploadCloud, Eye, Edit3, Columns, HelpCircle, Download, FileCode, FileText, Loader2, Settings, FolderOpen, Calendar, Droplet } from 'lucide-react';
+import { RefreshCw, Check, AlertCircle, Sun, Moon, Monitor, Palette, Eye, Edit3, Columns, Download, FileCode, FileText, Loader2, FolderOpen, Calendar, Key, Keyboard as KeyboardIcon, Trash2, MoreHorizontal, HelpCircle } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { cn } from '../utils/cn';
 import { THEME_COLORS } from '../constants/theme';
 import { useState } from 'react';
 import { marked, Renderer } from 'marked';
+import { KeyboardShortcutDialog } from './KeyboardShortcutDialog';
+import { TrashDialog } from './TrashDialog';
 
 interface ToolbarProps {
   onHelpClick?: () => void;
   onScheduleClick?: () => void;
+  onPasswordManagerClick?: () => void;
 }
 
-export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps) => {
-  const { gitStore, uiStore, fileStore, scheduleStore, drinkReminderStore, toastStore } = useStore();
+export const Toolbar = observer(({ onHelpClick, onScheduleClick, onPasswordManagerClick }: ToolbarProps) => {
+  const { gitStore, uiStore, fileStore, scheduleStore, trashStore } = useStore();
   const [isExporting, setIsExporting] = useState(false);
+  const [isKeyboardShortcutOpen, setIsKeyboardShortcutOpen] = useState(false);
+  const [isTrashDialogOpen, setIsTrashDialogOpen] = useState(false);
 
   const handleSync = () => {
     gitStore.sync();
@@ -25,44 +30,44 @@ export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps)
     if (gitStore.isSyncing) {
       if (gitStore.syncStep === 'committing') {
         return {
-          icon: <RefreshCw size={16} className="animate-spin text-amber-500" />,
-          text: `Committing ${gitStore.status.modified} files...`,
+          icon: <RefreshCw size={15} className="animate-spin text-amber-500" />,
+          text: `Committing ${gitStore.status.modified}...`,
           className: "text-amber-600 bg-amber-50 dark:bg-amber-900/10"
         };
       }
       return {
-        icon: <RefreshCw size={16} className="animate-spin text-primary" />,
-        text: 'Pushing to cloud...',
+        icon: <RefreshCw size={15} className="animate-spin text-primary" />,
+        text: 'Pushing...',
         className: "text-primary bg-primary/10"
       };
     }
-    
+
     if (gitStore.status.status === 'error') {
       return {
-        icon: <AlertCircle size={16} className="text-red-500" />,
-        text: 'Sync Error',
+        icon: <AlertCircle size={15} className="text-red-500" />,
+        text: 'Error',
         className: "text-red-600 bg-red-50 dark:bg-red-900/10 hover:bg-red-100"
       };
     }
 
     if (gitStore.status.modified > 0) {
       return {
-        icon: <Cloud size={16} className="text-amber-500" />,
-        text: `${gitStore.status.modified} Unsaved`,
+        icon: <div className="w-2.5 h-2.5 bg-amber-500 rounded-full" />,
+        text: `${gitStore.status.modified}`,
         className: "text-amber-600 bg-amber-50 dark:bg-amber-900/10 hover:bg-amber-100"
       };
     }
 
     if (gitStore.status.ahead > 0) {
       return {
-        icon: <UploadCloud size={16} className="text-blue-500" />,
-        text: `${gitStore.status.ahead} Ahead`,
+        icon: <div className="w-2.5 h-2.5 bg-blue-500 rounded-full" />,
+        text: `${gitStore.status.ahead}`,
         className: "text-blue-600 bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100"
       };
     }
 
     return {
-      icon: <Check size={16} className="text-emerald-500" />,
+      icon: <Check size={15} className="text-emerald-500" />,
       text: 'Synced',
       className: "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
     };
@@ -75,7 +80,6 @@ export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps)
 
     setIsExporting(true);
     try {
-      // Create custom renderer for image path conversion
       const renderer = new Renderer();
 
       renderer.image = ({ href, title, text }: { href: string; title?: string | null; text: string }) => {
@@ -84,7 +88,6 @@ export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps)
         let src = href;
         let style = '';
 
-        // Parse query params for size (e.g. ?w=100px)
         try {
           const urlObj = new URL(href, 'http://dummy');
           const width = urlObj.searchParams.get('w');
@@ -96,7 +99,6 @@ export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps)
           // Ignore parsing errors
         }
 
-        // If it's a relative path and not a web URL or data URL or media:// URL
         if (!href.startsWith('http') && !href.startsWith('data:') && !href.startsWith('media:')) {
           if (fileStore.currentFile) {
             const currentFilePath = fileStore.currentFile.path;
@@ -104,7 +106,6 @@ export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps)
             if (lastSlashIndex !== -1) {
               const currentDir = currentFilePath.substring(0, lastSlashIndex);
               const absolutePath = `${currentDir}/${href}`;
-              // Use media://local protocol
               src = `media://local${absolutePath}`;
             }
           }
@@ -113,10 +114,8 @@ export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps)
         return `<img src="${src}" alt="${text}" title="${title || ''}" style="${style}" />`;
       };
 
-      // Generate HTML with custom renderer
       const htmlBody = await marked.parse(fileStore.currentContent, { renderer });
-      
-      // Basic Template
+
       const fullHtml = `
 <!DOCTYPE html>
 <html>
@@ -125,7 +124,7 @@ export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps)
 <title>${fileStore.currentFile.name}</title>
 <style>
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     padding: 2em;
     max-width: 900px;
     margin: 0 auto;
@@ -133,8 +132,7 @@ export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps)
     color: #24292f;
     background-color: #ffffff;
   }
-  
-  /* GitHub Markdown CSS Style */
+
   h1, h2, h3, h4, h5, h6 {
     margin-top: 24px;
     margin-bottom: 16px;
@@ -142,16 +140,13 @@ export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps)
     line-height: 1.25;
     color: #24292f;
   }
-  
+
   h1 { font-size: 2em; border-bottom: 1px solid #d0d7de; padding-bottom: .3em; }
   h2 { font-size: 1.5em; border-bottom: 1px solid #d0d7de; padding-bottom: .3em; }
   h3 { font-size: 1.25em; }
-  h4 { font-size: 1em; }
-  h5 { font-size: 0.875em; }
-  h6 { font-size: 0.85em; color: #57606a; }
-  
+
   p { margin-top: 0; margin-bottom: 16px; }
-  
+
   code {
     padding: .2em .4em;
     margin: 0;
@@ -160,7 +155,7 @@ export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps)
     border-radius: 6px;
     font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
   }
-  
+
   pre {
     padding: 16px;
     overflow: auto;
@@ -170,26 +165,24 @@ export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps)
     border-radius: 6px;
     margin-bottom: 16px;
   }
-  
+
   pre code {
     background-color: transparent;
     padding: 0;
   }
-  
+
   blockquote {
     padding: 0 1em;
     color: #57606a;
     border-left: .25em solid #d0d7de;
     margin: 0 0 16px 0;
   }
-  
+
   img {
     max-width: 100%;
     box-sizing: content-box;
-    background-color: #fff;
-    border-style: none;
   }
-  
+
   table {
     border-spacing: 0;
     border-collapse: collapse;
@@ -198,21 +191,16 @@ export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps)
     display: block;
     overflow: auto;
   }
-  
+
   table th, table td {
     padding: 6px 13px;
     border: 1px solid #d0d7de;
   }
-  
-  table tr {
-    background-color: #fff;
-    border-top: 1px solid #d8dee4;
-  }
-  
+
   table tr:nth-child(2n) {
     background-color: #f6f8fa;
   }
-  
+
   hr {
     height: 0.25em;
     padding: 0;
@@ -220,46 +208,10 @@ export const Toolbar = observer(({ onHelpClick, onScheduleClick }: ToolbarProps)
     background-color: #d0d7de;
     border: 0;
   }
-  
+
   a {
     color: #0969da;
     text-decoration: none;
-  }
-  
-  a:hover {
-    text-decoration: underline;
-  }
-  
-  ul, ol {
-    padding-left: 2em;
-    margin-top: 0;
-    margin-bottom: 16px;
-  }
-  
-  li > p {
-    margin-top: 16px;
-  }
-  
-  li + li {
-    margin-top: .25em;
-  }
-  
-  /* Task lists */
-  ul.contains-task-list {
-    list-style-type: none;
-    padding-left: 0;
-  }
-  
-  .task-list-item-checkbox {
-    margin: 0 .2em .25em -1.6em;
-    vertical-align: middle;
-  }
-
-  @media print {
-    body {
-      padding: 0;
-      max-width: 100%;
-    }
   }
 </style>
 </head>
@@ -297,8 +249,8 @@ ${htmlBody}
 
   return (
     <>
-      <div className="h-12 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between px-4 shrink-0 z-10 pl-24">
-         {/* Left: Brand / Breadcrumbs */}
+      <div className="h-11 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between px-4 shrink-0 z-10 pl-24">
+         {/* Left: Brand */}
         <div className="flex items-center gap-2 font-medium text-gray-700 dark:text-gray-200 select-none">
           {fileStore.projectName && (
             <div className="flex items-center gap-2 px-2">
@@ -308,73 +260,104 @@ ${htmlBody}
           )}
         </div>
 
-         {/* Right: Actions */}
-         <div className="flex items-center gap-2">
-            {/* View Mode Toggle */}
-            <div className="flex bg-gray-100 dark:bg-gray-800 rounded-md p-0.5 mr-2">
+         {/* Right: Actions - Reorganized with better grouping */}
+         <div className="flex items-center gap-1">
+
+            {/* ===== Group 1: View Mode ===== */}
+            <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-md p-0.5 mr-1">
               <button
                 onClick={() => uiStore.setViewMode('editor')}
                 className={cn(
                   "p-1.5 rounded-sm transition-all",
-                  uiStore.viewMode === 'editor' 
-                    ? "bg-white dark:bg-gray-700 shadow-sm text-primary" 
+                  uiStore.viewMode === 'editor'
+                    ? "bg-white dark:bg-gray-700 shadow-sm text-primary"
                     : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 )}
-                title="Editor Only"
+                title="仅编辑器"
               >
-                <Edit3 size={16} />
+                <Edit3 size={14} />
               </button>
               <button
                 onClick={() => uiStore.setViewMode('split')}
                 className={cn(
                   "p-1.5 rounded-sm transition-all",
-                  uiStore.viewMode === 'split' 
-                    ? "bg-white dark:bg-gray-700 shadow-sm text-primary" 
+                  uiStore.viewMode === 'split'
+                    ? "bg-white dark:bg-gray-700 shadow-sm text-primary"
                     : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 )}
-                title="Split View"
+                title="分屏"
               >
-                <Columns size={16} />
+                <Columns size={14} />
               </button>
               <button
                 onClick={() => uiStore.setViewMode('preview')}
                 className={cn(
                   "p-1.5 rounded-sm transition-all",
-                  uiStore.viewMode === 'preview' 
-                    ? "bg-white dark:bg-gray-700 shadow-sm text-primary" 
+                  uiStore.viewMode === 'preview'
+                    ? "bg-white dark:bg-gray-700 shadow-sm text-primary"
                     : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 )}
-                title="Preview Only"
+                title="仅预览"
               >
-                <Eye size={16} />
+                <Eye size={14} />
               </button>
             </div>
 
-            {/* Sync Button */}
-            <button 
+            {/* ===== Group 2: Sync Status ===== */}
+            <button
               onClick={handleSync}
               disabled={gitStore.isSyncing}
               className={cn(
-                 "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200",
+                 "flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all duration-200 mr-1",
                  statusUI.className
               )}
-              title={gitStore.status.errorMessage || `Last synced: ${gitStore.status.lastSyncTime ? new Date(gitStore.status.lastSyncTime).toLocaleTimeString() : 'Never'}`}
+              title={gitStore.status.errorMessage || `最后同步: ${gitStore.status.lastSyncTime ? new Date(gitStore.status.lastSyncTime).toLocaleTimeString() : '从未同步'}`}
             >
                {statusUI.icon}
-               <span>{statusUI.text}</span>
+               <span className="hidden sm:inline">{statusUI.text}</span>
             </button>
 
-            <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
-
-            {/* Export Menu */}
+            {/* ===== Group 3: Export ===== */}
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
                 <button
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors text-gray-500 hover:text-primary"
-                  title="Export"
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors text-gray-500 hover:text-primary mr-0.5"
+                  title="导出"
                   disabled={isExporting}
                 >
-                  {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                  {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                </button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  className="min-w-[140px] bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                  align="end"
+                  sideOffset={5}
+                >
+                  <DropdownMenu.Item
+                    className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded outline-none"
+                    onSelect={() => handleExport('html')}
+                  >
+                    <FileCode size={14} className="mr-2" /> 导出为 HTML
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded outline-none"
+                    onSelect={() => handleExport('pdf')}
+                  >
+                    <FileText size={14} className="mr-2" /> 导出为 PDF
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+
+            {/* ===== Group 4: More Tools ===== */}
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <button
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors text-gray-500 hover:text-primary mr-0.5"
+                  title="更多工具"
+                >
+                  <MoreHorizontal size={16} />
                 </button>
               </DropdownMenu.Trigger>
               <DropdownMenu.Portal>
@@ -384,161 +367,136 @@ ${htmlBody}
                   sideOffset={5}
                 >
                   <DropdownMenu.Item
-                    className="flex items-center px-2 py-1.5 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded outline-none"
-                    onSelect={() => handleExport('html')}
+                    className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded outline-none"
+                    onSelect={() => setIsKeyboardShortcutOpen(true)}
                   >
-                    <FileCode size={14} className="mr-2" /> Export to HTML
+                    <KeyboardIcon size={14} className="mr-2 text-gray-500" />
+                    快捷键设置
                   </DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    className="flex items-center px-2 py-1.5 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded outline-none"
-                    onSelect={() => handleExport('pdf')}
-                  >
-                    <FileText size={14} className="mr-2" /> Export to PDF
-                  </DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
-
-            {/* Settings / Logs Menu */}
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
-                <button
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors text-gray-500 hover:text-primary"
-                  title="设置"
-                >
-                  <Settings size={18} />
-                </button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content
-                  className="min-w-[200px] bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
-                  align="end"
-                  sideOffset={5}
-                >
                   <DropdownMenu.Item
                     className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded outline-none"
                     onSelect={handleOpenLogDirectory}
                   >
-                    <FolderOpen size={14} className="mr-2" />
+                    <FolderOpen size={14} className="mr-2 text-gray-500" />
                     打开日志目录
                   </DropdownMenu.Item>
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
 
-            {/* Schedule Button */}
-            <button
-              onClick={onScheduleClick}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors text-gray-500 hover:text-primary relative"
-              title="日程清单 (⌘+D)"
-            >
-              <Calendar size={18} />
-              {scheduleStore.overdueCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-              )}
-            </button>
-
-            {/* Drink Reminder Button */}
-            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-md p-0.5">
-              <button
-                onClick={async () => {
-                  const success = await drinkReminderStore.toggle();
-                  if (success) {
-                    toastStore?.success(drinkReminderStore.config.enabled ? '饮水提醒已开启' : '饮水提醒已关闭');
-                  }
-                }}
-                className={cn(
-                  "p-1.5 rounded-sm transition-all flex items-center gap-1",
-                  drinkReminderStore.config.enabled
-                    ? "bg-white dark:bg-gray-700 shadow-sm text-blue-500"
-                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                )}
-                title={drinkReminderStore.config.enabled ? "点击关闭提醒" : "点击开启提醒"}
-              >
-                <Droplet size={16} />
-              </button>
-              <button
-                onClick={() => drinkReminderStore.openSettings()}
-                className={cn(
-                  "p-1.5 rounded-sm transition-all",
-                  drinkReminderStore.config.enabled
-                    ? "text-blue-500"
-                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                )}
-                title="提醒设置"
-              >
-                <Settings size={14} />
-              </button>
-            </div>
-
-            {/* Help Button */}
-            <button
-              onClick={onHelpClick}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors text-gray-500 hover:text-primary"
-              title="帮助文档 (⌘+H)"
-            >
-              <HelpCircle size={18} />
-            </button>
-
-            {/* Unified Theme Picker */}
+            {/* ===== Group 5: Quick Actions ===== */}
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
-                 <button 
-                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors flex items-center gap-2"
+                <button
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors text-gray-500 hover:text-primary relative mr-0.5"
+                  title="快捷功能"
+                >
+                  <Calendar size={16} />
+                  {(scheduleStore.overdueCount > 0 || (trashStore && trashStore.trashCount > 0)) && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                  )}
+                </button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  className="min-w-[160px] bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                  align="end"
+                  sideOffset={5}
+                >
+                  <DropdownMenu.Item
+                    className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded outline-none"
+                    onSelect={onScheduleClick}
+                  >
+                    <Calendar size={14} className="mr-2 text-blue-500" />
+                    日程清单
+                    {scheduleStore.overdueCount > 0 && (
+                      <span className="ml-auto w-2 h-2 bg-red-500 rounded-full" />
+                    )}
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded outline-none"
+                    onSelect={onPasswordManagerClick}
+                  >
+                    <Key size={14} className="mr-2 text-amber-500" />
+                    密码管理器
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded outline-none"
+                    onSelect={() => setIsTrashDialogOpen(true)}
+                  >
+                    <Trash2 size={14} className="mr-2 text-gray-500" />
+                    回收站
+                    {trashStore && trashStore.trashCount > 0 && (
+                      <span className="ml-auto w-2 h-2 bg-red-500 rounded-full" />
+                    )}
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Separator className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+                  <DropdownMenu.Item
+                    className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded outline-none"
+                    onClick={onHelpClick}
+                  >
+                    <HelpCircle size={14} className="mr-2 text-gray-500" />
+                    帮助文档
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+
+            {/* ===== Group 6: Theme ===== */}
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                 <button
+                   className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors flex items-center gap-1"
                    style={{ color: 'var(--color-primary)' }}
-                   title="Theme Settings"
+                   title="主题设置"
                  >
-                   <Palette size={18} />
-                   <div className="text-gray-600 dark:text-gray-300">
-                      {uiStore.themeMode === 'dark' ? <Moon size={14} /> : uiStore.themeMode === 'light' ? <Sun size={14} /> : <Monitor size={14} />}
-                   </div>
+                   <Palette size={16} />
                  </button>
               </DropdownMenu.Trigger>
               <DropdownMenu.Portal>
-                 <DropdownMenu.Content 
-                   className="w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-4 z-50 animate-in fade-in zoom-in-95 duration-100"
+                 <DropdownMenu.Content
+                   className="w-52 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 z-50 animate-in fade-in zoom-in-95 duration-100"
                    align="end"
                    sideOffset={5}
                  >
                    {/* Mode Selection */}
-                   <div className="mb-4">
-                     <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Mode</div>
-                     <div className="flex bg-gray-100 dark:bg-gray-900 rounded-md p-1">
+                   <div className="mb-3">
+                     <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">模式</div>
+                     <div className="flex bg-gray-100 dark:bg-gray-900 rounded-md p-0.5">
                        {[
-                         { value: 'light', icon: Sun, label: 'Light' },
-                         { value: 'dark', icon: Moon, label: 'Dark' },
-                         { value: 'system', icon: Monitor, label: 'Auto' },
+                         { value: 'light', icon: Sun, label: '浅色' },
+                         { value: 'dark', icon: Moon, label: '深色' },
+                         { value: 'system', icon: Monitor, label: '自动' },
                        ].map((mode) => (
                           <button
                             key={mode.value}
                             onClick={() => uiStore.setThemeMode(mode.value as ThemeMode)}
                             className={cn(
-                             "flex-1 flex items-center justify-center gap-2 py-1.5 text-sm rounded-sm transition-all",
-                             uiStore.themeMode === mode.value 
-                               ? "bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white font-medium" 
+                             "flex-1 flex items-center justify-center py-1.5 text-xs rounded-sm transition-all",
+                             uiStore.themeMode === mode.value
+                               ? "bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white font-medium"
                                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                            )}
                            title={mode.label}
                          >
-                           <mode.icon size={14} />
-                           <span className="text-xs">{mode.label}</span>
+                           <mode.icon size={12} />
                          </button>
                        ))}
                      </div>
                    </div>
 
-                   <div className="h-px bg-gray-200 dark:bg-gray-700 my-3" />
+                   <DropdownMenu.Separator className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
 
                    {/* Color Selection */}
-                   <div>
-                     <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Accent Color</div>
-                     <div className="grid grid-cols-6 gap-2">
+                   <div className="mb-3">
+                     <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">主题色</div>
+                     <div className="grid grid-cols-6 gap-1.5">
                        {THEME_COLORS.map((color) => (
                          <button
                            key={color.value}
                            onClick={() => uiStore.setThemeColor(color.value)}
                            className={cn(
-                             "w-8 h-8 rounded-full border border-gray-200 dark:border-gray-600 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800",
+                             "w-6 h-6 rounded-full border border-gray-200 dark:border-gray-600 transition-transform hover:scale-110 focus:outline-none",
                              uiStore.themeColor === color.value && "ring-2 ring-offset-2 dark:ring-offset-gray-800 scale-110"
                            )}
                            style={{ backgroundColor: color.value, borderColor: uiStore.themeColor === color.value ? color.value : undefined }}
@@ -548,34 +506,33 @@ ${htmlBody}
                      </div>
                    </div>
 
-                   <div className="h-px bg-gray-200 dark:bg-gray-700 my-3" />
+                   <DropdownMenu.Separator className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
 
                    {/* Markdown Theme Selection */}
                    <div>
-                     <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Layout Style</div>
-                     <div className="space-y-1">
+                     <div className="flex items-center justify-between mb-1.5">
+                       <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">MD 样式</div>
+                     </div>
+                     <div className="grid grid-cols-3 gap-1">
                        {[
-                         { value: 'default', label: 'Default (Minimal)' },
-                         { value: 'classic', label: 'Classic (Border)' },
-                         { value: 'bubble', label: 'Bubble (Card)' },
-                         { value: 'ribbon', label: 'Ribbon (Solid)' },
-                         { value: 'tech', label: 'Tech (Counter)' },
-                         { value: 'elegant', label: 'Elegant (Serif)' },
+                         { value: 'classic', label: '经典' },
+                         { value: 'elegant', label: '优雅' },
+                         { value: 'minimal', label: '简约' },
+                         { value: 'bubble', label: '活泼' },
+                         { value: 'tech', label: '极客' },
+                         { value: 'github', label: 'GitHub' },
                        ].map((theme) => (
                          <button
                            key={theme.value}
                            onClick={() => uiStore.setMarkdownTheme(theme.value)}
                            className={cn(
-                             "w-full text-left px-2 py-1.5 text-sm rounded-md transition-colors",
-                             uiStore.markdownTheme === theme.value 
-                               ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white font-medium" 
-                               : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                             "px-2 py-1 text-xs rounded-md transition-colors",
+                             uiStore.markdownTheme === theme.value
+                               ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white font-medium"
+                               : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                            )}
                          >
-                           <div className="flex items-center justify-between">
-                             <span>{theme.label}</span>
-                             {uiStore.markdownTheme === theme.value && <Check size={14} className="text-primary" />}
-                           </div>
+                           {theme.label}
                          </button>
                        ))}
                      </div>
@@ -585,6 +542,18 @@ ${htmlBody}
             </DropdownMenu.Root>
          </div>
       </div>
+
+      {/* Keyboard Shortcut Dialog */}
+      <KeyboardShortcutDialog
+        isOpen={isKeyboardShortcutOpen}
+        onClose={() => setIsKeyboardShortcutOpen(false)}
+      />
+
+      {/* Trash Dialog */}
+      <TrashDialog
+        isOpen={isTrashDialogOpen}
+        onClose={() => setIsTrashDialogOpen(false)}
+      />
     </>
   );
 });

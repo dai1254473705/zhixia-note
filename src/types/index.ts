@@ -10,9 +10,9 @@ export interface FileNode {
   type: FileType;
   children?: FileNode[];
   level: number;     // 目录层级: 0(Root) -> 1(Category) -> 2(Note) -> 3(Invalid)
-  
+
   // 仅在运行时使用的 UI 状态 (可选，MobX 中可能会单独维护)
-  isExpanded?: boolean; 
+  isExpanded?: boolean;
 }
 
 // 笔记元数据 (FrontMatter)
@@ -33,7 +33,7 @@ export interface AppConfig {
   themeMode: ThemeMode;
   themeColor: ThemeColor;
   markdownTheme?: string; // New field for Markdown theme
-  repoPath: string;  // 本地仓库路径 (通常是 userHome/.github-notebook)
+  repoPath: string;  // 本地仓库路径 (通常是 userHome/.zhixia-note)
   recentProjects: string[]; // 最近打开的项目路径列表
   remoteUrl?: string;
   sidebarWidth?: number; // 侧边栏宽度
@@ -100,6 +100,32 @@ export interface DrinkReminderConfig {
   intervalMinutes: number;
   messages: string[];
   nextReminderTime?: string | null;
+}
+
+// 密码管理相关类型
+export interface PasswordEntry {
+  id: string;
+  title: string;
+  username?: string;
+  password: string;
+  email?: string;
+  website?: string;
+  notes?: string;
+  encrypted: boolean; // Whether password is encrypted
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PasswordSettings {
+  masterPasswordHash?: string; // Hashed master password
+  encryptionSalt?: string; // Unique salt for encryption (generated per user)
+  encryptionEnabled: boolean;
+  autoLockMinutes: number;
+}
+
+export interface PasswordData {
+  passwords: PasswordEntry[];
+  settings: PasswordSettings;
 }
 
 export interface IpcApi {

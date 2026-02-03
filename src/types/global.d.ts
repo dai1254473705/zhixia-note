@@ -1,4 +1,4 @@
-import { AppConfig, FileNode, GitStatus, IpcResponse, ScheduleItem, DrinkReminderConfig } from './index';
+import { AppConfig, FileNode, GitStatus, IpcResponse, ScheduleItem, DrinkReminderConfig, PasswordEntry, PasswordSettings, PasswordData } from './index';
 
 declare global {
   interface Window {
@@ -19,6 +19,7 @@ declare global {
       renameItem: (oldPath: string, newName: string) => Promise<IpcResponse<string>>;
       moveItem: (sourcePath: string, targetParentPath: string) => Promise<IpcResponse<string>>;
       copyToAssets: (sourcePath: string, currentMdPath: string) => Promise<IpcResponse<string>>;
+      savePastedFile: (fileName: string, fileData: Uint8Array, currentMdPath: string) => Promise<IpcResponse<string>>;
       exportHtml: (content: string, defaultPath?: string) => Promise<IpcResponse<string>>;
       exportPdf: (htmlContent: string, defaultPath?: string) => Promise<IpcResponse<string>>;
       exportHtmlDirect: (content: string, outputPath: string) => Promise<IpcResponse<string>>;
@@ -69,6 +70,17 @@ declare global {
       drinkReminderToggle: () => Promise<IpcResponse<DrinkReminderConfig>>;
       drinkReminderUpdateMessages: (messages: string[]) => Promise<IpcResponse<string[]>>;
       drinkReminderResetMessages: () => Promise<IpcResponse<string[]>>;
+
+      // Password Manager
+      getPasswordDataPath: () => Promise<IpcResponse<string>>;
+      loadPasswordData: () => Promise<IpcResponse<PasswordData>>;
+      savePasswordData: (data: PasswordData) => Promise<IpcResponse<void>>;
+      openPasswordDataLocation: () => Promise<IpcResponse<void>>;
+      hashPassword: (password: string) => Promise<IpcResponse<string>>;
+      verifyPassword: (password: string, hash: string) => Promise<IpcResponse<boolean>>;
+      generateEncryptionSalt: () => Promise<IpcResponse<string>>;
+      encryptPassword: (password: string, masterPassword: string, salt?: string) => Promise<IpcResponse<string>>;
+      decryptPassword: (encryptedPassword: string, masterPassword: string, salt?: string) => Promise<IpcResponse<string>>;
 
       // Window
       maximizeWindow: () => void;

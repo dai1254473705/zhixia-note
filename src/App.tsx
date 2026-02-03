@@ -8,18 +8,23 @@ import { HelpDialog } from './components/HelpDialog';
 import { ErrorDialog } from './components/ErrorDialog';
 import { SchedulePanel } from './components/Schedule';
 import { DrinkReminderDialog } from './components/DrinkReminder';
+import { PasswordManager } from './components/PasswordManager';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useStore } from './store';
 import { useEffect, lazy, Suspense, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
 
 // Code splitting for less frequently used components
 const Welcome = lazy(() => import('./components/Welcome').then(m => ({ default: m.Welcome })));
 
-const App = observer(() => {
+// Inner App Component (wrapped by ErrorBoundary)
+const AppContent = observer(() => {
   const { uiStore, fileStore } = useStore();
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showPasswordManager, setShowPasswordManager] = useState(false);
 
   useEffect(() => {
     uiStore.initTheme();
@@ -46,6 +51,12 @@ const App = observer(() => {
       if (isMod && e.key === 'd') {
         e.preventDefault();
         setShowSchedule(prev => !prev);
+      }
+
+      // Cmd+P to open password manager
+      if (isMod && e.key === 'p') {
+        e.preventDefault();
+        setShowPasswordManager(true);
       }
 
       // Cmd+B to toggle sidebar
@@ -136,6 +147,7 @@ const App = observer(() => {
           <Toolbar
             onHelpClick={() => setShowHelp(true)}
             onScheduleClick={() => setShowSchedule(true)}
+            onPasswordManagerClick={() => setShowPasswordManager(true)}
           />
           <div className="flex-1 flex overflow-hidden">
             <Sidebar />
@@ -155,8 +167,33 @@ const App = observer(() => {
         onClose={() => uiStore.closeErrorDialog()}
       />
       <DrinkReminderDialog />
+
+      {/* Password Manager Modal */}
+      <Dialog.Root open={showPasswordManager} onOpenChange={setShowPasswordManager}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50 animate-in fade-in duration-200" />
+          <Dialog.Content className="fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] bg-white dark:bg-gray-900 rounded-lg shadow-xl z-50 w-[90vw] h-[80vh] max-w-5xl animate-in zoom-in-95 duration-200 flex flex-col overflow-hidden">
+            <Dialog.Title className="sr-only">密码管理器</Dialog.Title>
+            <Dialog.Close asChild>
+              <button className="absolute top-4 right-4 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors z-10">
+                <X size={20} className="text-gray-500" />
+              </button>
+            </Dialog.Close>
+            <PasswordManager />
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </>
   );
 });
+
+// Main App with Error Boundary
+const App = () => {
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  );
+};
 
 export default App;

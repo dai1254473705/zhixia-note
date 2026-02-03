@@ -8,7 +8,12 @@
       "Bash(yarn build:*)",
       "Bash(gh repo rename:*)",
       "Bash(git remote set-url:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(awk:*)",
+      "Bash(vite build:*)",
+      "Bash(npx vite build:*)",
+      "Bash(find:*)"
     ]
   }
 }

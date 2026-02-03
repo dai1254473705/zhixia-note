@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import { configService } from './configService';
 import { FileNode } from '../../src/types';
 
@@ -9,10 +9,24 @@ const ATTACHMENT_DIR = 'files';
 const MAX_DEPTH = 3; // 目录层级限制 (0: Root, 1: Dir, 2: Dir, 3: File)
 
 export class FileService {
-  
+
   private async getRootPath(): Promise<string> {
     const config = await configService.getConfig();
     return config.repoPath;
+  }
+
+  // Generate a stable ID based on the file path
+  private generateStableId(filePath: string): string {
+    // Normalize path to ensure consistency (handle slashes, redundancy)
+    let normalized = path.normalize(filePath);
+    // On macOS/Windows, file system is case-insensitive usually. 
+    // To ensure ID consistency even if path casing differs slightly contextually,
+    // we should validly considering lower-casing for hash generation on these platforms.
+    // However, purely relying on path.normalize is a safer first step.
+    if (process.platform === 'darwin' || process.platform === 'win32') {
+      normalized = normalized.toLowerCase();
+    }
+    return crypto.createHash('md5').update(normalized).digest('hex');
   }
 
   async getFileTree(): Promise<FileNode[]> {
@@ -39,7 +53,7 @@ export class FileService {
       // Let's read what exists.
 
       const node: FileNode = {
-        id: uuidv4(), // In a real app, might want stable IDs based on path hash
+        id: this.generateStableId(itemPath), // Use stable ID
         name: item.name,
         path: itemPath,
         type: isDirectory ? 'directory' : 'file',
@@ -70,7 +84,7 @@ export class FileService {
   async createFile(parentPath: string, name: string): Promise<FileNode> {
     const fullPath = path.join(parentPath, name);
     await this.validatePath(fullPath);
-    
+
     // Check depth
     const rootPath = await this.getRootPath();
     const relativePath = path.relative(rootPath, fullPath);
@@ -87,9 +101,9 @@ export class FileService {
     }
 
     await fs.ensureFile(fullPath);
-    
+
     return {
-      id: uuidv4(),
+      id: this.generateStableId(fullPath),
       name,
       path: fullPath,
       type: 'file',
@@ -104,9 +118,9 @@ export class FileService {
     const rootPath = await this.getRootPath();
     const relativePath = path.relative(rootPath, fullPath);
     const depth = relativePath.split(path.sep).length;
-    
+
     // Allow max depth - 1 for folders, so files can be inside
-    if (depth > MAX_DEPTH) { 
+    if (depth > MAX_DEPTH) {
       throw new Error(`Cannot create directory at this depth (Max ${MAX_DEPTH})`);
     }
 
@@ -123,7 +137,7 @@ export class FileService {
     await fs.ensureDir(finalPath);
 
     return {
-      id: uuidv4(),
+      id: this.generateStableId(finalPath),
       name: finalName,
       path: finalPath,
       type: 'directory',
@@ -185,7 +199,7 @@ export class FileService {
     const filePath = path.join(filesDir, uniqueName);
 
     await fs.writeFile(filePath, fileBuffer);
-    
+
     // Return relative path for Markdown
     return `${ATTACHMENT_DIR}/${uniqueName}`;
   }
@@ -204,7 +218,7 @@ export class FileService {
     const assetsDirName = 'files';
     const currentDir = path.dirname(currentMdPath);
     const assetsDir = path.join(currentDir, assetsDirName);
-    
+
     console.log('[FileService] assetsDir', assetsDir);
 
     await fs.ensureDir(assetsDir);
@@ -213,13 +227,13 @@ export class FileService {
     const originalName = path.basename(sourcePath, ext);
     let fileName = `${originalName}${ext}`;
     let targetPath = path.join(assetsDir, fileName);
-    
+
     // Handle name collision by appending timestamp
     if (await fs.pathExists(targetPath)) {
       fileName = `${originalName}-${Date.now()}${ext}`;
       targetPath = path.join(assetsDir, fileName);
     }
-    
+
     console.log('[FileService] Copying to', targetPath);
 
     await fs.copyFile(sourcePath, targetPath);
@@ -227,6 +241,44 @@ export class FileService {
     // Return relative path: "files/filename.png"
     // Use posix style separators for Markdown compatibility
     return `${assetsDirName}/${fileName}`;
+  }
+
+  /**
+   * 保存粘贴的文件到 assets 文件夹
+   * @param fileName 文件名
+   * @param fileData 文件数据 (Buffer)
+   * @param currentMdPath 当前 markdown 文件的绝对路径
+   * @returns 相对路径，用于 markdown 引用
+   */
+  async savePastedFile(fileName: string, fileData: Buffer, currentMdPath: string): Promise<string> {
+    console.log('[FileService] savePastedFile', { fileName, currentMdPath });
+    await this.validatePath(currentMdPath);
+
+    const assetsDirName = 'files';
+    const currentDir = path.dirname(currentMdPath);
+    const assetsDir = path.join(currentDir, assetsDirName);
+
+    console.log('[FileService] assetsDir', assetsDir);
+
+    await fs.ensureDir(assetsDir);
+
+    const ext = path.extname(fileName);
+    const originalName = path.basename(fileName, ext);
+    let targetFileName = fileName;
+    let targetPath = path.join(assetsDir, fileName);
+
+    // Handle name collision by appending timestamp
+    if (await fs.pathExists(targetPath)) {
+      targetFileName = `${originalName}-${Date.now()}${ext}`;
+      targetPath = path.join(assetsDir, targetFileName);
+    }
+
+    console.log('[FileService] Saving pasted file to', targetPath);
+
+    await fs.writeFile(targetPath, fileData);
+
+    // Return relative path: "files/filename.png"
+    return `${assetsDirName}/${targetFileName}`;
   }
 
   private async validatePath(targetPath: string) {

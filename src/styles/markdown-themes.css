@@ -1,61 +1,95 @@
-/* Markdown Nice Themes Collection */
+/* ==========================================================================
+   知夏笔记 - Markdown 主题样式
+   优化版本 - 更好的可读性和视觉层次
+   ========================================================================== */
 
 /* ==========================================================================
-   Common Resets & Base Styles
+   基础样式
    ========================================================================== */
 .markdown-theme-container {
   width: 100%;
   overflow-wrap: break-word;
-  line-height: 1.8;
-  font-size: 16px;
+  line-height: 1.75;
+  font-size: 15px;
   color: var(--text-app);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .markdown-theme-container p {
-  margin-bottom: 1.5em;
+  margin-bottom: 1.25em;
+  line-height: 1.85;
 }
 
 .markdown-theme-container ul,
 .markdown-theme-container ol {
-  margin-bottom: 1.5em;
+  margin-bottom: 1.25em;
+  padding-left: 1.75em;
 }
 
 .markdown-theme-container li {
+  margin-bottom: 0.4em;
+  line-height: 1.7;
+}
+
+.markdown-theme-container li > p {
   margin-bottom: 0.5em;
 }
 
-/* 14. Images */
+/* 列表嵌套 */
+.markdown-theme-container li ul,
+.markdown-theme-container li ol {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+/* 图片 */
 .markdown-theme-container img {
   max-width: 100%;
   height: auto;
   display: block;
   margin: 1.5em auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* 15. Tables - Base */
+/* 表格基础 */
 .markdown-theme-container table {
   border-collapse: collapse;
   width: 100%;
   margin: 1.5em 0;
   font-size: 0.9em;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .markdown-theme-container th,
 .markdown-theme-container td {
   border: 1px solid var(--border-color);
-  padding: 8px 12px;
+  padding: 10px 14px;
+  text-align: left;
 }
 
-/* 7. Code Blocks - Base */
+.markdown-theme-container th {
+  font-weight: 600;
+}
+
+.markdown-theme-container tr:last-child td {
+  border-bottom: none;
+}
+
+/* 代码块基础 */
 .markdown-theme-container pre {
-  padding: 16px;
-  border-radius: 6px;
-  overflow: auto;
+  padding: 16px 18px;
+  border-radius: 10px;
+  overflow-x: auto;
   margin: 1.5em 0;
-  line-height: 1.5;
+  line-height: 1.55;
   background-color: var(--bg-sidebar);
   border: 1px solid var(--border-color);
-  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, 'Courier New', monospace;
+  font-size: 0.88em;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .markdown-theme-container pre code {
@@ -65,643 +99,711 @@
   color: inherit;
   border: none;
   font-family: inherit;
+  font-size: inherit;
 }
 
-/* 6. Inline Code - Base */
+/* 行内代码 */
 .markdown-theme-container code {
-  padding: 0.2em 0.4em;
-  margin: 0;
-  font-size: 85%;
+  padding: 0.2em 0.5em;
+  margin: 0 0.1em;
+  font-size: 0.875em;
   background-color: var(--bg-sidebar);
-  border-radius: 6px;
-  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  border-radius: 5px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   color: var(--text-app);
+  border: 1px solid var(--border-color);
+}
+
+/* 分割线 */
+.markdown-theme-container hr {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-color), transparent);
+  margin: 2.5em 0;
+}
+
+/* 链接 */
+.markdown-theme-container a {
+  color: var(--md-primary-color);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.markdown-theme-container a:hover {
+  border-bottom-color: var(--md-primary-color);
+  opacity: 0.85;
 }
 
 /* ==========================================================================
-   Layout Style: Classic (WeChat / Standard)
+   主题: Classic (经典)
    ========================================================================== */
 .md-style-classic {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--text-app);
-  font-size: 16px;
 }
 
-/* 1. Headers */
+/* 标题 */
 .md-style-classic h1 {
-  font-size: 1.8em;
-  border-bottom: 2px solid var(--md-primary-color);
-  color: var(--md-primary-color);
-  padding-bottom: 10px;
-  margin: 40px 0 20px;
-  text-align: center;
+  font-size: 1.85em;
+  font-weight: 700;
+  border-bottom: 2px solid var(--md-primary-color, #10b981);
+  color: var(--text-app);
+  padding-bottom: 0.35em;
+  margin: 1.8em 0 1em;
+  letter-spacing: -0.02em;
 }
 
 .md-style-classic h2 {
-  font-size: 1.5em;
-  border-left: 4px solid var(--md-primary-color);
-  padding-left: 10px;
-  margin: 30px 0 20px;
+  font-size: 1.45em;
+  font-weight: 600;
+  border-left: 4px solid var(--md-primary-color, #10b981);
+  padding-left: 12px;
+  margin: 1.6em 0 0.9em;
   color: var(--text-app);
-  background: linear-gradient(to right, var(--md-primary-bg-color), transparent);
+  background: linear-gradient(to right, var(--md-primary-bg-color, rgba(16, 185, 129, 0.08)), transparent);
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-radius: 0 4px 4px 0;
 }
 
 .md-style-classic h3 {
-  font-size: 1.3em;
-  color: var(--md-primary-color);
-  margin: 25px 0 15px;
-  padding-left: 8px;
-  border-left: 2px solid var(--md-primary-color);
+  font-size: 1.25em;
+  font-weight: 600;
+  color: var(--text-app);
+  margin: 1.4em 0 0.8em;
+  padding-left: 10px;
+  border-left: 2px solid var(--md-primary-color, #10b981);
 }
 
 .md-style-classic h4 {
   font-size: 1.1em;
-  font-weight: bold;
+  font-weight: 600;
   color: var(--text-app);
-  opacity: 0.9;
-  margin: 20px 0 10px;
+  margin: 1.2em 0 0.6em;
 }
 
-.md-style-classic h5 {
-  font-size: 1em;
-  font-weight: bold;
-  color: var(--text-app);
-  opacity: 0.8;
-  margin: 15px 0 5px;
-}
-
+.md-style-classic h5,
 .md-style-classic h6 {
   font-size: 1em;
+  font-weight: 600;
   color: var(--text-app);
-  opacity: 0.6;
-  text-decoration: underline;
-  margin: 15px 0 5px;
+  opacity: 0.85;
+  margin: 1em 0 0.5em;
 }
 
-/* 2-5. Inline Text Styles */
+/* 文本样式 */
 .md-style-classic strong {
-  color: var(--md-primary-color);
-  font-weight: bold;
+  color: var(--md-primary-color, #10b981);
+  font-weight: 600;
 }
 
 .md-style-classic em {
   font-style: italic;
   color: var(--text-app);
-  opacity: 0.7;
-}
-
-.md-style-classic strong em {
-  color: var(--md-primary-color);
-  border-bottom: 1px solid var(--md-primary-color);
+  opacity: 0.8;
 }
 
 .md-style-classic del {
   color: var(--text-app);
   opacity: 0.5;
+  text-decoration: line-through;
 }
 
-/* 8-10. Lists */
-.md-style-classic ul, .md-style-classic ol {
-  padding-left: 2em;
-  margin-bottom: 1.5em;
-}
-
-.md-style-classic ul li {
+/* 列表 */
+.md-style-classic ul {
   list-style-type: disc;
 }
 
-.md-style-classic ol li {
+.md-style-classic ol {
   list-style-type: decimal;
 }
 
-/* 11-12. Blockquotes */
+.md-style-classic li::marker {
+  color: var(--md-primary-color, #10b981);
+}
+
+/* 引用 */
 .md-style-classic blockquote {
-  border-left: 4px solid var(--md-primary-color);
-  background-color: var(--md-primary-bg-color);
+  border-left: 4px solid var(--md-primary-color, #10b981);
+  background: linear-gradient(to right, var(--md-primary-bg-color, rgba(16, 185, 129, 0.08)), transparent);
   color: var(--text-app);
-  opacity: 0.8;
-  padding: 15px;
-  margin: 20px 0;
-  border-radius: 0 4px 4px 0;
+  padding: 12px 16px;
+  margin: 1.25em 0;
+  border-radius: 0 8px 8px 0;
 }
 
-.md-style-classic blockquote blockquote {
-  background-color: transparent;
-  border-left: 3px solid var(--border-color);
-  margin: 10px 0;
-  padding-left: 10px;
+.md-style-classic blockquote p {
+  margin-bottom: 0.5em;
 }
 
-/* 13 & 17. Links */
-.md-style-classic a {
-  color: var(--md-primary-color);
-  text-decoration: none;
-  border-bottom: 1px solid var(--md-primary-color);
-  transition: opacity 0.2s;
+.md-style-classic blockquote p:last-child {
+  margin-bottom: 0;
 }
 
-.md-style-classic a:hover {
-  opacity: 0.8;
-}
-
-/* 14. Images */
-.md-style-classic img {
-  border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-/* 15. Tables */
+/* 表格 */
 .md-style-classic th {
-  background-color: var(--md-primary-bg-color);
-  color: var(--md-primary-color);
+  background-color: var(--md-primary-bg-color, rgba(16, 185, 129, 0.12));
+  color: var(--md-primary-color, #10b981);
 }
 
-.md-style-classic tr:nth-child(2n) {
+.md-style-classic tr:nth-child(even) {
   background-color: var(--bg-sidebar);
 }
 
-/* 16. HR */
+/* 分割线 */
 .md-style-classic hr {
-  border: 0;
-  border-top: 1px dashed var(--md-primary-color);
-  margin: 40px 0;
+  border-top: 1px dashed var(--md-primary-color, #10b981);
+  opacity: 0.4;
 }
-
 
 /* ==========================================================================
-   Layout Style: Elegant (Minimalist / Serif)
+   主题: Elegant (优雅)
    ========================================================================== */
 .md-style-elegant {
-  font-family: "Georgia", "Times New Roman", serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--text-app);
   line-height: 1.9;
-  font-size: 16px;
 }
 
-/* 1. Headers */
+/* 标题 - 居中风格 */
 .md-style-elegant h1 {
   font-size: 2em;
   text-align: center;
-  color: var(--md-primary-color);
-  margin: 50px 0 30px;
-  font-weight: normal;
-  letter-spacing: 2px;
+  color: var(--text-app);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 16px;
+  margin: 2em 0 1.5em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .md-style-elegant h2 {
   font-size: 1.5em;
   text-align: center;
   color: var(--text-app);
-  border-bottom: 1px solid var(--md-primary-color);
-  padding-bottom: 15px;
-  margin: 40px 0 25px;
-  display: table;
-  margin-left: auto;
-  margin-right: auto;
-  font-weight: normal;
+  margin: 1.8em 0 1.2em;
+  font-weight: 600;
+  position: relative;
+}
+
+.md-style-elegant h2::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 3px;
+  background: var(--md-primary-color, #10b981);
+  margin: 12px auto 0;
+  border-radius: 2px;
 }
 
 .md-style-elegant h3 {
-  font-size: 1.2em;
-  text-align: center;
-  font-weight: bold;
-  margin: 30px 0 15px;
-  color: var(--text-app);
-  opacity: 0.8;
-}
-
-.md-style-elegant h4, .md-style-elegant h5, .md-style-elegant h6 {
+  font-size: 1.25em;
   text-align: left;
-  font-weight: bold;
+  font-weight: 600;
+  margin: 1.5em 0 1em;
   color: var(--text-app);
-  opacity: 0.7;
-  margin-top: 20px;
+  padding-left: 12px;
+  border-left: 3px solid var(--md-primary-color, #10b981);
 }
 
-/* 2-5. Inline */
+.md-style-elegant h4,
+.md-style-elegant h5,
+.md-style-elegant h6 {
+  font-weight: 600;
+  color: var(--text-app);
+  opacity: 0.85;
+  margin-top: 1.2em;
+}
+
+/* 文本样式 */
 .md-style-elegant strong {
-  color: var(--md-primary-color);
+  color: var(--md-primary-color, #10b981);
   font-weight: 600;
 }
 
 .md-style-elegant em {
-  font-family: cursive;
+  font-style: italic;
   color: var(--text-app);
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
-.md-style-elegant del {
-  text-decoration-style: double;
+/* 列表 */
+.md-style-elegant ul li::marker {
+  color: var(--md-primary-color, #10b981);
 }
 
-/* 8-10. Lists */
-.md-style-elegant ul li {
-  list-style-type: square;
-  color: var(--text-app);
-}
-
-/* 11-12. Blockquotes */
+/* 引用 */
 .md-style-elegant blockquote {
   border: none;
-  padding: 20px;
-  margin: 30px 20px;
-  background-color: var(--bg-sidebar);
+  padding: 16px 20px;
+  margin: 1.5em 0;
+  background: linear-gradient(135deg, var(--md-primary-bg-color, rgba(16, 185, 129, 0.08)), transparent);
   font-style: italic;
-  text-align: center;
-  position: relative;
+  border-radius: 8px;
 }
 
 .md-style-elegant blockquote::before {
-  content: "“";
-  font-size: 3em;
-  color: var(--md-primary-color);
-  position: absolute;
-  top: -10px;
-  left: 10px;
-  opacity: 0.3;
+  content: "❝";
+  font-size: 1.5em;
+  color: var(--md-primary-color, #10b981);
+  opacity: 0.4;
+  margin-right: 8px;
 }
 
-/* 13. Links */
-.md-style-elegant a {
-  color: var(--md-primary-color);
-  text-decoration: underline;
-  text-underline-offset: 4px;
+/* 表格 */
+.md-style-elegant th {
+  border-bottom: 2px solid var(--md-primary-color, #10b981);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
-/* 15. Tables */
 .md-style-elegant table {
   border: none;
 }
-.md-style-elegant th {
-  border: none;
-  border-bottom: 2px solid var(--md-primary-color);
-  text-transform: uppercase;
-  font-size: 0.8em;
-  letter-spacing: 1px;
-}
-.md-style-elegant td {
-  border: none;
-  border-bottom: 1px solid var(--border-color);
-}
 
-/* 16. HR */
+/* 分割线 */
 .md-style-elegant hr {
-  border: 0;
-  height: 1px;
-  background-image: linear-gradient(to right, transparent, var(--md-primary-color), transparent);
-  margin: 50px 0;
+  background: linear-gradient(to right, transparent, var(--md-primary-color, #10b981), transparent);
+  opacity: 0.3;
 }
-
 
 /* ==========================================================================
-   Layout Style: Bubble (Card / Playful)
+   主题: Minimal (简约)
    ========================================================================== */
-.md-style-bubble {
-  font-family: "Varela Round", -apple-system, sans-serif;
+.md-style-minimal {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--text-app);
 }
 
-/* 1. Headers */
-.md-style-bubble h1 {
-  background: var(--md-primary-color);
-  color: #fff;
-  padding: 12px 24px;
-  border-radius: 50px;
-  text-align: center;
-  box-shadow: 0 4px 15px var(--md-primary-bg-color);
-  margin: 40px auto 30px;
-  width: fit-content;
+/* 标题 - 简洁风格 */
+.md-style-minimal h1 {
+  font-size: 1.9em;
+  font-weight: 700;
+  color: var(--text-app);
+  margin: 1.8em 0 1em;
+  letter-spacing: -0.03em;
 }
 
-.md-style-bubble h2 {
-  color: var(--md-primary-color);
-  background: var(--md-primary-bg-color);
-  padding: 8px 16px;
-  border-radius: 12px;
-  display: inline-block;
-  margin: 30px 0 15px;
-  box-shadow: 2px 2px 0 var(--md-primary-color);
+.md-style-minimal h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  color: var(--text-app);
+  margin: 1.6em 0 0.9em;
+  letter-spacing: -0.02em;
 }
 
-.md-style-bubble h3 {
-  color: var(--md-primary-color);
-  border-bottom: 3px dotted var(--md-primary-color);
-  display: inline-block;
-  margin: 20px 0 10px;
-  padding-bottom: 4px;
+.md-style-minimal h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  color: var(--text-app);
+  margin: 1.4em 0 0.8em;
 }
 
-.md-style-bubble h4 {
-  background: var(--bg-sidebar);
-  padding: 4px 12px;
-  border-radius: 15px;
-  display: inline-block;
+.md-style-minimal h4 {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--text-app);
+  margin: 1.2em 0 0.6em;
+}
+
+.md-style-minimal h5,
+.md-style-minimal h6 {
+  font-size: 1em;
+  font-weight: 600;
+  color: var(--text-app);
+  opacity: 0.8;
+  margin: 1em 0 0.5em;
+}
+
+/* 文本样式 */
+.md-style-minimal strong {
+  font-weight: 600;
+  color: var(--text-app);
+}
+
+.md-style-minimal em {
+  font-style: italic;
+}
+
+/* 引用 */
+.md-style-minimal blockquote {
+  border-left: 3px solid var(--border-color);
+  padding-left: 16px;
+  margin: 1.25em 0;
   color: var(--text-app);
   opacity: 0.8;
 }
 
-.md-style-bubble h5, .md-style-bubble h6 {
-  color: var(--text-app);
-  opacity: 0.6;
-  margin-top: 15px;
+/* 表格 */
+.md-style-minimal th {
+  background-color: var(--bg-sidebar);
+  font-weight: 600;
 }
 
-/* 2-5. Inline */
+.md-style-minimal tr:nth-child(even) {
+  background-color: var(--bg-sidebar);
+}
+
+/* ==========================================================================
+   主题: Bubble (活泼) - 保留原有特色但优化
+   ========================================================================== */
+.md-style-bubble {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-app);
+}
+
+.md-style-bubble h1 {
+  background: linear-gradient(135deg, var(--md-primary-color, #10b981), var(--md-primary-color, #059669));
+  color: #fff;
+  padding: 14px 28px;
+  border-radius: 50px;
+  text-align: center;
+  box-shadow: 0 4px 15px var(--md-primary-bg-color, rgba(16, 185, 129, 0.3));
+  margin: 2em auto 1.5em;
+  width: fit-content;
+  max-width: 90%;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.md-style-bubble h2 {
+  color: var(--md-primary-color, #10b981);
+  background: var(--md-primary-bg-color, rgba(16, 185, 129, 0.12));
+  padding: 8px 18px;
+  border-radius: 20px;
+  display: inline-block;
+  margin: 1.5em 0 1em;
+  font-weight: 600;
+}
+
+.md-style-bubble h3 {
+  color: var(--text-app);
+  border-bottom: 3px dotted var(--md-primary-color, #10b981);
+  display: inline-block;
+  margin: 1.2em 0 0.8em;
+  padding-bottom: 6px;
+  font-weight: 600;
+}
+
 .md-style-bubble strong {
-  background: var(--md-primary-bg-color);
-  color: var(--md-primary-color);
-  padding: 0 4px;
+  background: var(--md-primary-bg-color, rgba(16, 185, 129, 0.15));
+  color: var(--md-primary-color, #10b981);
+  padding: 0.1em 0.4em;
   border-radius: 4px;
+  font-weight: 600;
 }
 
-/* 8-10. Lists */
-.md-style-bubble ul li::marker {
-  color: var(--md-primary-color);
-  content: "● ";
-}
-
-/* 11. Blockquote */
 .md-style-bubble blockquote {
-  background: var(--md-primary-bg-color);
-  border: 2px dashed var(--md-primary-color);
-  border-radius: 15px;
-  padding: 20px;
-  margin: 20px 0;
-  color: var(--text-app);
+  background: var(--md-primary-bg-color, rgba(16, 185, 129, 0.08));
+  border: 2px dashed var(--md-primary-color, #10b981);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin: 1.5em 0;
 }
 
-/* 13. Links */
 .md-style-bubble a {
   color: #fff;
-  background-color: var(--md-primary-color);
-  padding: 2px 8px;
-  border-radius: 10px;
+  background: linear-gradient(135deg, var(--md-primary-color, #10b981), var(--md-primary-color, #059669));
+  padding: 0.2em 0.7em;
+  border-radius: 20px;
   text-decoration: none;
   font-size: 0.9em;
+  font-weight: 500;
+  border-bottom: none;
 }
 
-/* 14. Images */
-.md-style-bubble img {
-  border-radius: 15px;
-  border: 4px solid var(--md-primary-bg-color);
+.md-style-bubble a:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
-/* 15. Tables */
 .md-style-bubble table {
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 0 0 1px var(--md-primary-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
+
 .md-style-bubble th {
-  background: var(--md-primary-color);
+  background: linear-gradient(135deg, var(--md-primary-color, #10b981), var(--md-primary-color, #059669));
   color: #fff;
 }
 
-/* 16. HR */
 .md-style-bubble hr {
   border: 0;
   text-align: center;
-  height: 20px;
-  margin: 40px 0;
+  height: 24px;
+  margin: 2em 0;
 }
+
 .md-style-bubble hr::before {
-  content: "•••";
-  color: var(--md-primary-color);
-  font-size: 20px;
-  letter-spacing: 10px;
+  content: "⋰⋰⋰";
+  color: var(--md-primary-color, #10b981);
+  font-size: 18px;
+  letter-spacing: 4px;
 }
-
 
 /* ==========================================================================
-   Layout Style: Ribbon (Business / Solid)
-   ========================================================================== */
-.md-style-ribbon {
-  font-family: -apple-system, sans-serif;
-  color: var(--text-app);
-}
-
-/* 1. Headers */
-.md-style-ribbon h1 {
-  background: var(--md-primary-color);
-  color: #fff;
-  padding: 15px 20px;
-  margin: 40px -20px 30px; /* Bleed out */
-  position: relative;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-.md-style-ribbon h2 {
-  border-bottom: 2px solid var(--md-primary-color);
-  color: var(--md-primary-color);
-  padding-bottom: 10px;
-  margin: 35px 0 20px;
-  position: relative;
-}
-.md-style-ribbon h2::after {
-  content: "";
-  display: block;
-  width: 50px;
-  height: 4px;
-  background: var(--md-primary-color);
-  position: absolute;
-  bottom: -3px;
-  left: 0;
-}
-
-.md-style-ribbon h3 {
-  border-left: 5px solid var(--md-primary-color);
-  padding-left: 10px;
-  color: var(--text-app);
-  background: var(--bg-sidebar);
-  padding: 8px 10px;
-  margin: 25px 0 15px;
-}
-
-.md-style-ribbon h4 {
-  color: var(--md-primary-color);
-  font-weight: bold;
-  text-transform: uppercase;
-  margin: 20px 0 10px;
-}
-
-/* 2-5. Inline */
-.md-style-ribbon strong {
-  color: var(--md-primary-color);
-  border-bottom: 2px solid var(--md-primary-bg-color);
-}
-
-/* 11. Blockquote */
-.md-style-ribbon blockquote {
-  border-left: 4px solid var(--md-primary-color);
-  background: linear-gradient(to right, var(--md-primary-bg-color), transparent);
-  padding: 15px;
-  color: var(--text-app);
-  margin: 20px 0;
-}
-
-/* 13. Links */
-.md-style-ribbon a {
-  color: var(--md-primary-color);
-  font-weight: bold;
-  border-bottom: 2px solid var(--md-primary-bg-color);
-  text-decoration: none;
-}
-.md-style-ribbon a:hover {
-  background-color: var(--md-primary-bg-color);
-}
-
-/* 15. Tables */
-.md-style-ribbon th {
-  background-color: var(--bg-sidebar);
-  border-bottom: 2px solid var(--md-primary-color);
-}
-
-/* 16. HR */
-.md-style-ribbon hr {
-  border: 0;
-  height: 2px;
-  background: var(--border-color);
-  margin: 50px 0;
-  position: relative;
-}
-.md-style-ribbon hr::after {
-  content: "§";
-  position: absolute;
-  left: 50%;
-  top: -12px;
-  background: var(--bg-app);
-  padding: 0 10px;
-  color: var(--md-primary-color);
-}
-
-
-/* ==========================================================================
-   Layout Style: Tech (Geek / Terminal)
+   主题: Tech (极客)
    ========================================================================== */
 .md-style-tech {
-  font-family: "SF Mono", "Consolas", "Liberation Mono", "Menlo", monospace;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   color: var(--text-app);
   counter-reset: h1counter;
 }
 
-/* 1. Headers */
 .md-style-tech h1 {
-  counter-increment: h1counter;
-  counter-reset: h2counter;
   font-size: 1.6em;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 10px;
-  margin: 40px 0 20px;
-  color: var(--md-primary-color);
-}
-.md-style-tech h1::before {
-  content: "[ " counter(h1counter) " ] ";
+  margin: 1.8em 0 1em;
   color: var(--text-app);
-  margin-right: 10px;
+  counter-increment: h1counter;
+  counter-reset: h2counter;
+}
+
+.md-style-tech h1::before {
+  content: "▸ " counter(h1counter) " ";
+  color: var(--md-primary-color, #10b981);
+  font-weight: 700;
 }
 
 .md-style-tech h2 {
-  counter-increment: h2counter;
-  counter-reset: h3counter;
-  font-size: 1.4em;
-  margin: 30px 0 20px;
+  font-size: 1.35em;
+  margin: 1.5em 0 0.9em;
   color: var(--text-app);
+  counter-increment: h2counter;
 }
+
 .md-style-tech h2::before {
-  content: counter(h1counter) "." counter(h2counter);
-  background: var(--md-primary-color);
-  color: #fff;
-  padding: 2px 6px;
-  margin-right: 10px;
-  font-size: 0.8em;
+  content: counter(h1counter) "." counter(h2counter) "  ";
+  color: var(--md-primary-color, #10b981);
+  font-weight: 700;
+  background: var(--md-primary-bg-color, rgba(16, 185, 129, 0.15));
+  padding: 2px 8px;
+  margin-right: 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
 }
 
 .md-style-tech h3 {
-  counter-increment: h3counter;
-  font-size: 1.2em;
-  margin: 25px 0 15px;
+  font-size: 1.15em;
+  margin: 1.3em 0 0.8em;
   color: var(--text-app);
-  opacity: 0.8;
 }
+
 .md-style-tech h3::before {
-  content: ">>> ";
-  color: var(--md-primary-color);
-  letter-spacing: -2px;
-  margin-right: 5px;
+  content: "▹ ";
+  color: var(--md-primary-color, #10b981);
+  margin-right: 6px;
 }
 
-.md-style-tech h4::before { content: "# "; color: var(--text-app); opacity: 0.5; }
-.md-style-tech h5::before { content: "## "; color: var(--text-app); opacity: 0.5; }
-.md-style-tech h6::before { content: "### "; color: var(--text-app); opacity: 0.5; }
+.md-style-tech h4::before { content: "• "; color: var(--md-primary-color, #10b981); }
+.md-style-tech h5::before { content: "◦ "; color: var(--md-primary-color, #10b981); }
+.md-style-tech h6::before { content: "· "; color: var(--md-primary-color, #10b981); }
 
-/* 2-5. Inline */
 .md-style-tech strong {
-  color: var(--md-primary-color);
-}
-.md-style-tech del {
-  text-decoration: line-through;
-  opacity: 0.5;
+  color: var(--md-primary-color, #10b981);
+  font-weight: 600;
 }
 
-/* 6-7. Code */
 .md-style-tech code {
-  color: var(--text-app);
   background: var(--bg-sidebar);
   border: 1px solid var(--border-color);
-  padding: 2px 4px;
+  padding: 0.15em 0.4em;
+  font-size: 0.85em;
 }
 
 .md-style-tech pre {
   background: var(--bg-sidebar);
   border: 1px solid var(--border-color);
-  color: var(--text-app);
-  border-radius: 0;
-  box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+  border-left: 3px solid var(--md-primary-color, #10b981);
+  border-radius: 4px;
+  box-shadow: none;
 }
 
-/* 8-10. Lists */
 .md-style-tech ul li::marker {
-  content: "> ";
-  color: var(--md-primary-color);
+  content: "→ ";
+  color: var(--md-primary-color, #10b981);
 }
 
-/* 11. Blockquote */
 .md-style-tech blockquote {
-  border: 1px dashed var(--md-primary-color);
+  border: 1px dashed var(--border-color);
   background: var(--bg-sidebar);
-  padding: 15px;
-  margin: 20px 0;
-  font-style: italic;
+  padding: 12px 16px;
+  margin: 1.25em 0;
+  border-radius: 4px;
 }
 
-/* 13. Links */
+.md-style-tech blockquote::before {
+  content: "// ";
+  color: var(--md-primary-color, #10b981);
+  opacity: 0.6;
+}
+
 .md-style-tech a {
-  color: var(--md-primary-color);
+  color: var(--md-primary-color, #10b981);
   text-decoration: none;
-  border-bottom: 1px dotted var(--md-primary-color);
-}
-.md-style-tech a:hover {
-  background: var(--md-primary-color);
-  color: #fff;
+  border-bottom: 1px dotted var(--md-primary-color, #10b981);
 }
 
-/* 15. Tables */
 .md-style-tech table {
-  border: 2px solid var(--border-color);
-}
-.md-style-tech th {
-  background: var(--bg-sidebar);
-  color: var(--text-app);
   border: 1px solid var(--border-color);
-}
-.md-style-tech td {
-  border: 1px solid var(--border-color);
-  font-family: monospace;
 }
 
-/* 16. HR */
 .md-style-tech hr {
-  border: 0;
   border-top: 1px dashed var(--border-color);
-  margin: 40px 0;
+  opacity: 0.5;
+}
+
+/* ==========================================================================
+   主题: GitHub (GitHub 风格)
+   ========================================================================== */
+.md-style-github {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  color: var(--text-app);
+  line-height: 1.6;
+}
+
+.md-style-github h1,
+.md-style-github h2 {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.3em;
+}
+
+.md-style-github h1 {
+  font-size: 2em;
+  font-weight: 600;
+  margin: 1.5em 0 1em;
+  border-bottom-width: 1px;
+}
+
+.md-style-github h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin: 1.4em 0 0.8em;
+  border-bottom-width: 1px;
+}
+
+.md-style-github h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin: 1.2em 0 0.6em;
+}
+
+.md-style-github h4 {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+}
+
+.md-style-github h5,
+.md-style-github h6 {
+  font-size: 0.875em;
+  font-weight: 600;
+  color: var(--text-app);
+  opacity: 0.8;
+}
+
+.md-style-github strong {
+  font-weight: 600;
+}
+
+.md-style-github blockquote {
+  padding: 0 1em;
+  color: var(--text-app);
+  opacity: 0.85;
+  border-left: 0.25em solid var(--border-color);
+  margin: 0 0 1.25em 0;
+}
+
+.md-style-github code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(175, 184, 193, 0.2);
+  border-radius: 6px;
+  border: none;
+}
+
+.md-style-github pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: var(--bg-sidebar);
+  border-radius: 6px;
+}
+
+.md-style-github table {
+  border-spacing: 0;
+  border-collapse: collapse;
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+}
+
+.md-style-github table th,
+.md-style-github table td {
+  padding: 6px 13px;
+  border: 1px solid var(--border-color);
+}
+
+.md-style-github table tr {
+  background-color: transparent;
+  border-top: 1px solid var(--border-color);
+}
+
+.md-style-github table tr:nth-child(2n) {
+  background-color: var(--bg-sidebar);
+}
+
+/* ==========================================================================
+   响应式优化
+   ========================================================================== */
+@media (max-width: 768px) {
+  .markdown-theme-container {
+    font-size: 14px;
+  }
+
+  .markdown-theme-container h1 {
+    font-size: 1.6em;
+  }
+
+  .markdown-theme-container h2 {
+    font-size: 1.35em;
+  }
+
+  .markdown-theme-container h3 {
+    font-size: 1.15em;
+  }
+
+  .markdown-theme-container pre {
+    padding: 12px 14px;
+    font-size: 0.85em;
+  }
+}
+
+/* ==========================================================================
+   深色模式增强
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+  .markdown-theme-container img {
+    opacity: 0.95;
+  }
+
+  .markdown-theme-container code {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .markdown-theme-container pre {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .markdown-theme-container table {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
 }

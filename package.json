@@ -4,6 +4,8 @@
   "private": true,
   "version": "0.1.12",
   "type": "commonjs",
+  "author": "daiyunzhou <1254473705@qq.com>",
+  "description": "一款简洁优雅的 Markdown 笔记应用",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && electron-builder",

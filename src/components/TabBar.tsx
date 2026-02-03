@@ -2,8 +2,9 @@ import { observer } from 'mobx-react-lite';
 import { useStore } from '../store';
 import { X } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { memo } from 'react';
 
-export const TabBar = observer(() => {
+export const TabBar = memo(observer(() => {
   const { fileStore } = useStore();
 
   if (fileStore.openTabs.length === 0) {
@@ -67,4 +68,4 @@ export const TabBar = observer(() => {
       </div>
     </div>
   );
-});
+}));

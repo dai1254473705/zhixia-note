@@ -1,10 +1,12 @@
 import { marked } from 'marked';
 import { useEffect, useRef } from 'react';
+import { memo } from 'react';
 import mermaid from 'mermaid';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/github-dark.css'; 
+import 'highlight.js/styles/github-dark.css';
 import { observer } from 'mobx-react-lite';
 import { useStore } from '../../store';
+import type { Wikilink } from '../../store/BacklinkStore';
 
 marked.use({
   breaks: true,
@@ -18,26 +20,26 @@ const renderer = new marked.Renderer();
 renderer.link = function({ href, title, tokens }: { href: string; title?: string | null; tokens: any[] }) {
   const text = this.parser.parseInline(tokens);
   if (!href) return text;
-  
+
   const ext = href.split('.').pop()?.toLowerCase();
   let icon = '';
-  
+
   // Simple extension check (exclude common web protocols to avoid icon on http links unless they end in ext)
   const isWeb = href.startsWith('http') || href.startsWith('www');
-  
+
   if (!isWeb || (isWeb && href.match(/\.(pdf|doc|docx|xls|xlsx|zip|rar|7z|txt|md)$/i))) {
     switch (ext) {
       case 'pdf': icon = '📄 '; break;
-      case 'doc': 
+      case 'doc':
       case 'docx': icon = '📝 '; break;
-      case 'xls': 
+      case 'xls':
       case 'xlsx': icon = '📊 '; break;
-      case 'ppt': 
+      case 'ppt':
       case 'pptx': icon = '📢 '; break;
-      case 'zip': 
-      case 'rar': 
+      case 'zip':
+      case 'rar':
       case '7z': icon = '📦 '; break;
-      case 'txt': 
+      case 'txt':
       case 'md': icon = '📃 '; break;
       // Add more as needed
     }
@@ -45,7 +47,7 @@ renderer.link = function({ href, title, tokens }: { href: string; title?: string
 
   // Open in new tab/window for files or external links
   const target = ' target="_blank" rel="noopener noreferrer"';
-  
+
   return `<a href="${href}" title="${title || ''}"${target}>${icon}${text}</a>`;
 };
 
@@ -57,8 +59,38 @@ mermaid.initialize({
   securityLevel: 'loose',
 });
 
-export const Preview = observer(({ content }: { content: string }) => {
-  const { uiStore, fileStore } = useStore();
+// Wikilink click handler - stored globally for use in rendered HTML
+let handleWikilinkClick: ((event: MouseEvent, target: string) => void) | null = null;
+
+export const setWikilinkClickHandler = (handler: ((event: MouseEvent, target: string) => void) | null) => {
+  handleWikilinkClick = handler;
+};
+
+// Parse wikilinks from content
+export const parseWikilinks = (content: string): Wikilink[] => {
+  const links: Wikilink[] = [];
+  const regex = /\[\[([^\]]+)(?:\|([^\]]+))?\]\]/g;
+  let match;
+
+  while ((match = regex.exec(content)) !== null) {
+    const fullMatch = match[0];
+    const target = match[1];
+    const alias = match[2];
+
+    if (!fullMatch.startsWith('\\')) {
+      links.push({
+        target,
+        alias,
+        position: { start: match.index, end: match.index + fullMatch.length }
+      });
+    }
+  }
+
+  return links;
+};
+
+export const Preview = memo(observer(function Preview({ content }: { content: string }) {
+  const { uiStore, fileStore, backlinkStore } = useStore();
   const ref = useRef<HTMLDivElement>(null);
 
   // Check if current file is JSON or TEXT
@@ -71,6 +103,25 @@ export const Preview = observer(({ content }: { content: string }) => {
   };
 
   const fileType = getFileType();
+
+  // Update backlinks when content changes
+  useEffect(() => {
+    if (fileType === 'markdown' && fileStore.currentFile) {
+      const fileName = fileStore.currentFile.name.replace('.md', '');
+
+      // Get old links to remove
+      const oldLinks = backlinkStore.getLinks(fileName);
+
+      // Parse new links
+      const newLinks = backlinkStore.extractLinksFromFile(fileName, content);
+
+      // Update backlink index
+      if (oldLinks.length > 0) {
+        backlinkStore.removeBacklinks(fileStore.currentFile.path, oldLinks);
+      }
+      backlinkStore.addBacklinks(fileStore.currentFile.path, newLinks);
+    }
+  }, [content, fileType, fileStore.currentFile, backlinkStore]);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -100,8 +151,6 @@ export const Preview = observer(({ content }: { content: string }) => {
     }
 
     // Handle Markdown files
-    // Custom Image Renderer to intercept and rewrite local paths
-    // We do this inside useEffect/component to access fileStore context
     const customRenderer = new marked.Renderer();
 
     // Preserve existing link renderer logic
@@ -165,14 +214,37 @@ export const Preview = observer(({ content }: { content: string }) => {
     if (ref.current) {
       // 1. Markdown Parsing
       const html = marked.parse(content || '', { async: false }) as string;
-      ref.current.innerHTML = html;
 
-      // 2. Syntax Highlighting
+      // 2. Post-process HTML to replace wikilinks with clickable spans
+      const processedHtml = html.replace(
+        /\[\[([^\]]+)(?:\|([^\]]+))?\]\]/g,
+        (match: string, target: string, alias: string) => {
+          // Skip escaped links
+          if (match.startsWith('\\')) return match.substring(1);
+          const displayText = alias || target;
+          return `<span class="wikilink" data-wikilink="${target}" style="color: var(--md-primary-color, #0969da); cursor: pointer; font-weight: 500; background: var(--md-primary-bg-color, rgba(9, 105, 218, 0.1)); padding: 0 2px; border-radius: 3px;">${displayText}</span>`;
+        }
+      );
+
+      ref.current.innerHTML = processedHtml;
+
+      // 3. Syntax Highlighting
       ref.current.querySelectorAll('pre code').forEach((block) => {
         hljs.highlightElement(block as HTMLElement);
       });
 
-      // 3. Mermaid Rendering
+      // 4. Attach wikilink click handlers
+      ref.current.querySelectorAll('.wikilink').forEach((wikilinkEl) => {
+        wikilinkEl.addEventListener('click', (e) => {
+          e.preventDefault();
+          const target = (wikilinkEl as HTMLElement).getAttribute('data-wikilink');
+          if (target && handleWikilinkClick) {
+            handleWikilinkClick(e as MouseEvent, target);
+          }
+        });
+      });
+
+      // 4. Mermaid Rendering
       const mermaidBlocks = ref.current.querySelectorAll('code.language-mermaid');
       const mermaidDivs: HTMLElement[] = [];
 
@@ -230,4 +302,4 @@ export const Preview = observer(({ content }: { content: string }) => {
       ref={ref} 
     />
   );
-});
+}));

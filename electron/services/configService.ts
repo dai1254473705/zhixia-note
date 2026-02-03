@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import { AppConfig } from '../../src/types';
 
-const CONFIG_DIR_NAME = '.github-notebook';
+const CONFIG_DIR_NAME = '.zhixia-note';
 const CONFIG_FILE_NAME = 'config.json';
 const SECRET_FILE_NAME = '.secret';
 const GITIGNORE_FILE_NAME = '.gitignore';

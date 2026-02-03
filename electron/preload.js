@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   renameItem: (oldPath, newName) => ipcRenderer.invoke('file:rename', oldPath, newName),
   moveItem: (sourcePath, targetParentPath) => ipcRenderer.invoke('file:move', sourcePath, targetParentPath),
   copyToAssets: (sourcePath, currentMdPath) => ipcRenderer.invoke('file:copyToAssets', sourcePath, currentMdPath),
+  savePastedFile: (fileName, fileData, currentMdPath) => ipcRenderer.invoke('file:savePastedFile', fileName, fileData, currentMdPath),
   exportHtml: (content, defaultPath) => ipcRenderer.invoke('file:exportHtml', content, defaultPath),
   exportPdf: (htmlContent, defaultPath) => ipcRenderer.invoke('file:exportPdf', htmlContent, defaultPath),
   exportHtmlDirect: (content, outputPath) => ipcRenderer.invoke('file:exportHtmlDirect', content, outputPath),
@@ -71,6 +72,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   drinkReminderToggle: () => ipcRenderer.invoke('drinkReminder:toggle'),
   drinkReminderUpdateMessages: (messages) => ipcRenderer.invoke('drinkReminder:updateMessages', messages),
   drinkReminderResetMessages: () => ipcRenderer.invoke('drinkReminder:resetMessages'),
+
+  // Password Manager
+  getPasswordDataPath: () => ipcRenderer.invoke('password:getDataPath'),
+  loadPasswordData: () => ipcRenderer.invoke('password:loadData'),
+  savePasswordData: (data) => ipcRenderer.invoke('password:saveData', data),
+  openPasswordDataLocation: () => ipcRenderer.invoke('password:openDataLocation'),
+  hashPassword: (password) => ipcRenderer.invoke('password:hash', password),
+  verifyPassword: (password, hash) => ipcRenderer.invoke('password:verify', password, hash),
+  generateEncryptionSalt: () => ipcRenderer.invoke('password:generateSalt'),
+  encryptPassword: (password, masterPassword, salt) => ipcRenderer.invoke('password:encrypt', password, masterPassword, salt),
+  decryptPassword: (encryptedPassword, masterPassword, salt) => ipcRenderer.invoke('password:decrypt', encryptedPassword, masterPassword, salt),
 
   // Window Controls
   maximizeWindow: () => ipcRenderer.send('window:maximize'),

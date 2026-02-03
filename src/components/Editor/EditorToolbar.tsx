@@ -15,6 +15,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { memo } from 'react';
 
 interface EditorToolbarProps {
   onInsert: (prefix: string, suffix: string) => void;
@@ -150,7 +151,7 @@ gitGraph
   },
 };
 
-export const EditorToolbar = ({ onInsert, onUpload, onFormat }: EditorToolbarProps) => {
+export const EditorToolbar = memo(function EditorToolbar({ onInsert, onUpload, onFormat }: EditorToolbarProps) {
   const tools = [
     { icon: Bold, label: 'Bold', prefix: '**', suffix: '**' },
     { icon: Italic, label: 'Italic', prefix: '*', suffix: '*' },
@@ -241,4 +242,4 @@ export const EditorToolbar = ({ onInsert, onUpload, onFormat }: EditorToolbarPro
       </div>
     </div>
   );
-};
+});

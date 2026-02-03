@@ -3,6 +3,7 @@ import path from 'path'
 import { fileURLToPath, pathToFileURL } from 'url'
 import fs from 'fs'
 import fsPromises from 'fs/promises'
+import crypto from 'crypto'
 import { configService } from './services/configService'
 import { fileService } from './services/fileService'
 import { gitService } from './services/gitService'
@@ -366,6 +367,16 @@ ipcMain.handle('file:copyToAssets', async (_, sourcePath, currentMdPath) => {
   }
 })
 
+// 保存粘贴的文件到 assets 文件夹
+ipcMain.handle('file:savePastedFile', async (_, fileName: string, fileData: Buffer, currentMdPath: string) => {
+  try {
+    const relativePath = await fileService.savePastedFile(fileName, fileData, currentMdPath)
+    return { success: true, data: relativePath }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+})
+
 ipcMain.handle('file:searchContent', async (_, query) => {
   try {
     return { success: true, data: await fileService.searchContent(query) }
@@ -704,7 +715,11 @@ ipcMain.handle('file:exportPdf', async (_, htmlContent, defaultPath) => {
 
       const win = new BrowserWindow({
         show: false,
-        webPreferences: { nodeIntegration: true },
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          sandbox: true
+        },
         icon: iconPath,
         title: '知夏笔记'
       });
@@ -841,7 +856,11 @@ ipcMain.handle('file:exportPdfDirect', async (_, htmlContent, outputPath) => {
 
     const win = new BrowserWindow({
       show: false,
-      webPreferences: { nodeIntegration: true },
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true
+      },
       icon: iconPath,
       title: '知夏笔记'
     });
@@ -1125,6 +1144,131 @@ ipcMain.handle('drinkReminder:resetMessages', async () => {
   try {
     const messages = drinkReminderService.resetMessages()
     return { success: true, data: messages }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+})
+
+// Password Manager
+const PASSWORD_DATA_FILE = 'passwords.json'
+
+// Helper to get password data file path
+const getPasswordDataPath = () => {
+  return path.join(app.getPath('userData'), PASSWORD_DATA_FILE)
+}
+
+ipcMain.handle('password:getDataPath', async () => {
+  try {
+    const dataPath = getPasswordDataPath()
+    return { success: true, data: dataPath }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+})
+
+ipcMain.handle('password:loadData', async () => {
+  try {
+    const dataPath = getPasswordDataPath()
+    if (fs.existsSync(dataPath)) {
+      const content = await fsPromises.readFile(dataPath, 'utf-8')
+      return { success: true, data: JSON.parse(content) }
+    }
+    return { success: true, data: { passwords: [], settings: { encryptionEnabled: false, autoLockMinutes: 5 } } }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+})
+
+ipcMain.handle('password:saveData', async (_, data) => {
+  try {
+    const dataPath = getPasswordDataPath()
+    await fsPromises.mkdir(path.dirname(dataPath), { recursive: true })
+    await fsPromises.writeFile(dataPath, JSON.stringify(data, null, 2), 'utf-8')
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+})
+
+ipcMain.handle('password:openDataLocation', async () => {
+  try {
+    const dataPath = getPasswordDataPath()
+    // Show the file in folder
+    shell.showItemInFolder(dataPath)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+})
+
+// Hash password using PBKDF2
+ipcMain.handle('password:hash', async (_, password: string) => {
+  try {
+    const salt = crypto.randomBytes(16).toString('hex')
+    const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex')
+    return { success: true, data: `${salt}:${hash}` }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+})
+
+// Verify password against hash
+ipcMain.handle('password:verify', async (_, password: string, storedHash: string) => {
+  try {
+    const [salt, hash] = storedHash.split(':')
+    const verifyHash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex')
+    return { success: true, data: hash === verifyHash }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+})
+
+// Generate a random salt for encryption
+ipcMain.handle('password:generateSalt', async () => {
+  try {
+    const salt = crypto.randomBytes(32).toString('hex')
+    return { success: true, data: salt }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+})
+
+// Encrypt password using AES-256-GCM
+// Now accepts an optional custom salt for better security
+ipcMain.handle('password:encrypt', async (_, password: string, masterPassword: string, customSalt?: string) => {
+  try {
+    // Use custom salt if provided, otherwise fall back to default (for backward compatibility)
+    const salt = customSalt || 'zhixia-password-manager-salt'
+    const key = crypto.pbkdf2Sync(masterPassword, salt, 100000, 32, 'sha256')
+    const iv = crypto.randomBytes(16)
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
+
+    let encrypted = cipher.update(password, 'utf8', 'hex')
+    encrypted += cipher.final('hex')
+    const authTag = cipher.getAuthTag().toString('hex')
+
+    return { success: true, data: `${iv.toString('hex')}:${authTag}:${encrypted}` }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+})
+
+// Decrypt password
+// Now accepts an optional custom salt for better security
+ipcMain.handle('password:decrypt', async (_, encryptedData: string, masterPassword: string, customSalt?: string) => {
+  try {
+    const [ivHex, authTagHex, encrypted] = encryptedData.split(':')
+    // Use custom salt if provided, otherwise fall back to default (for backward compatibility)
+    const salt = customSalt || 'zhixia-password-manager-salt'
+    const key = crypto.pbkdf2Sync(masterPassword, salt, 100000, 32, 'sha256')
+
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(ivHex, 'hex'))
+    decipher.setAuthTag(Buffer.from(authTagHex, 'hex'))
+
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8')
+    decrypted += decipher.final('utf8')
+
+    return { success: true, data: decrypted }
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
